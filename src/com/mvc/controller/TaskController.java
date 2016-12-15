@@ -87,13 +87,13 @@ public class TaskController {
 	 * @param session
 	 * @return
 	 */
-	@RequestMapping(value = "/selectTaskBySearchKey.do")
-	public @ResponseBody String getTasksByParam(HttpServletRequest request, HttpSession session) {
+	@RequestMapping(value = "/selectTaskByKeys.do")
+	public @ResponseBody String getTasksBySearchKey(HttpServletRequest request, HttpSession session) {
 		JSONObject jsonObject = new JSONObject();
 		User user = (User) session.getAttribute(SessionKeyConstants.LOGIN);
 		Integer taskState = Integer.valueOf(request.getParameter("taskState"));
 		Integer sendOrReceive = Integer.valueOf(request.getParameter("sendOrReceive"));
-		String searchKey = request.getParameter("searchKey");
+		String searchKey = request.getParameter("context");
 		Integer totalRow = taskService.countByParam(user.getUser_id(), taskState, searchKey, sendOrReceive);
 		Pager pager = new Pager();
 		pager.setPage(Integer.valueOf(request.getParameter("page")));
@@ -170,27 +170,21 @@ public class TaskController {
 
 		task.setCreator(user);
 		jsonObject = JSONObject.fromObject(request.getParameter("task"));
-		if (jsonObject.containsKey("receiver_id")) {
-			User receiver = new User();
-			receiver.setUser_id(Integer.valueOf(jsonObject.getString("receiver_id")));
-			task.setReceiver(receiver);
-		}
-		if (jsonObject.containsKey("task_stime")) {
-			Date sdate = format.parse(jsonObject.getString("task_stime"));
-			task.setTask_stime(sdate);
-		}
+		User receiver = new User();
+		receiver.setUser_id(Integer.valueOf(jsonObject.getString("receiver_id")));
+		task.setReceiver(receiver);
 		task.setTask_ctime(new Date(time));
-		if (jsonObject.containsKey("task_etime")) {
-			Date edate = format.parse(jsonObject.getString("task_etime"));
-			task.setTask_etime(edate);
-		}
+		Date sdate = format.parse(jsonObject.getString("task_stime"));
+		Date edate = format.parse(jsonObject.getString("task_etime"));
 		if (jsonObject.containsKey("task_content")) {
-			task.setTask_remark(jsonObject.getString("task_content"));
+			task.setTask_content(jsonObject.getString("task_content"));// 备注，张群刘亚赢不统一
 		}
+		task.setTask_stime(sdate);
+		task.setTask_etime(edate);
 		task.setTask_isdelete(IsDelete.NO.value);
 		task.setTask_state(TaskStatus.waitingReceipt.value);
 		task.setTask_alarmnum(0);
-		if (taskType != TaskType.assistants.value) {// 0代表普通任务；2代表补录合同任务
+		if (taskType != TaskType.assistants.value) {// 0代表普通任务；2代表执行管控任务
 			Task taskResult = taskService.save(task);
 			if (taskResult.getTask_id() != null) {
 				result.put("result", "true");
@@ -207,7 +201,7 @@ public class TaskController {
 				subTasks.add("seal");
 			if (jsonObject.containsKey("post")) // 邮寄
 				subTasks.add("post");
-			if (jsonObject.containsKey("file")) // 归档
+			if (jsonObject.containsKey("file")) // 归档（已返回）
 				subTasks.add("file");
 			Task taskResult = taskService.save(task);
 			boolean flag = false;

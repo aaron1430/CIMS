@@ -9,9 +9,10 @@
 <div class="rightinfo">
 	<div class="tools">
 		<form class="toolbar">
-			<input name="" type="text" class="dfinput" id="tContent"
-				placeholder="内容关键字" /><select class="dfselect" ng-model="tState"
-				style="width: 167px">
+			<!-- <input name="" type="text" class="dfinput" id="tContent"
+				placeholder="内容关键字" /> -->
+			<select class="dfselect" ng-model="tState" style="width: 167px"
+				id="tState">
 				<option value="-1">全部</option>
 				<option value="0">新任务</option>
 				<option value="1">处理中</option>
@@ -27,8 +28,6 @@
 						src="../images/t01.png" /></span>新建</a></li>
 		</ul>
 	</div>
-
-	<a has-permission='Edit'>测试自定义指令</a>
 	<table class="tablelist">
 		<thead>
 			<tr>
@@ -37,9 +36,9 @@
 				<th>状态</th>
 				<th>创建者</th>
 				<th>报警次数</th>
-				<th>备注</th>
 				<th has-permission='tContCollect'>补录合同</th>
-				<th has-permission='tContDetail'>查看合同</th>
+				<th has-permission='tContDetail'>相关合同</th>
+				<th>备注</th>
 				<th>操作</th>
 			</tr>
 		</thead>
@@ -47,32 +46,22 @@
 		<tbody>
 			<tr ng-repeat="t in tasks" id={{t.task_id}}>
 				<td>{{$index + 1}}</td>
-				<td><div ng-switch={{t.task_type}}>
-						<div ng-switch-when="0">普通任务</div>
-						<div ng-switch-when="1">文书任务</div>
-						<div ng-switch-when="2">补录合同任务</div>
-						<div ng-switch-when="3">其他</div>
-					</div></td>
-				<td><div ng-switch={{t.task_state}}>
-						<div ng-switch-when="0">待接收</div>
-						<div ng-switch-when="1">执行中</div>
-						<div ng-switch-when="2">已完成</div>
-					</div></td>
+				<td>{{t.task_type | taskType}}</td>
+				<td>{{t.task_state | taskState}}</td>
 				<td>{{t.creator.user_name}}</td>
 				<td>{{t.task_alarmnum}}</td>
-				<td>{{t.task_remark |cutString}}</td>
 				<td has-permission='tContCollect'><div
 						ng-switch={{t.task_type}}>
 						<div ng-switch-when="0"></div>
 						<div ng-switch-when="1">
 							<a class="tablelink"
-								href="/CIMS/contract/toContractPage.do#/contractDetail"
+								href="/CIMS/contract/toContractPage.do#/contractInfo"
 								ng-click="getConId(t.contract.cont_id)">{{t.contract.cont_name
 								|cutString}}</a>
 						</div>
 						<div ng-switch-when="2">
 							<a class="tablelink"
-								href="/CIMS/contract/toContractPage.do#/contractDetail"
+								href="/CIMS/contract/toContractPage.do#/contractInfo"
 								ng-click="getConId(t.contract.cont_id)">{{t.contract.cont_name
 								|cutString}}</a>
 						</div>
@@ -94,10 +83,11 @@
 						</div>
 
 					</div></td>
-
+				<td>{{t.task_content |cutString}}</td>
 				<td><a ng-click="checkTask()" class="tablelink">查看</a><a
-					ng-click="finishTask()" class="tablelink finishLabel">完成</a><a
-					ng-click="delTask()" class="tablelink delLabel">删除</a></td>
+					ng-click="finishTask()" class="tablelink finishLabel"
+					task-finish='{{t.task_state}},{{t.task_type}}'>完成</a><a
+					ng-click="delTask()" class="tablelink delLabel" task-delete>删除</a></td>
 			</tr>
 		</tbody>
 	</table>
@@ -132,17 +122,15 @@
 		<!-- 这个a标签是模态框上的叉叉 -->
 	</div>
 	<div class="formbody">
-		<form id="" ng-submit="addTask()">
+		<form ng-submit="addOneTask()">
 			<ul class="forminfo">
 				<li><label>任务类型</label> <label value="0">普通任务</label></li>
 				<li><label>接收人</label><select name="tReceiver" class="dfselect"
-					ng-model="task.receiver_id">
-						<option ng-repeat="user in users" value={{user.user_id}}>
-							<span>{{user.user_name}}</span>
-						</option>
+					ng-model="task.receiver_id" ng-options="user.user_id as user.user_name for user in users" required>
+						<option value="">请选择</option>
 				</select></li>
 				<li><label>内容</label> <textarea name="" cols="" rows=""
-						class="textinput area_style" ng-model="task.task_remark" required></textarea></li>
+						class="textinput area_style" ng-model="task.task_content" required></textarea></li>
 				<li><label>开始时间</label><input type="text"
 					ng-model="task.task_stime" class="dfinput dateFormat"
 					placeholder="格式：2016-09-07" required /> <span class="error-span">格式错误</span></li>
@@ -151,9 +139,9 @@
 					placeholder="格式：2016-09-07" required /><span class="error-span">格式错误</span></li>
 			</ul>
 			<div class="tipbtn">
-				<input name="" type="submit" class="sure" id="sureAdd" value="派发"
-					ng-click="addTask()" />&nbsp; <input name="" type="button"
-					class="cancel" id="cancelAdd" value="取消" />
+				<input name="" type="submit" class="sure" id="sureAdd" value="派发" />&nbsp;
+				<input name="" type="button" class="cancel" id="cancelAdd"
+					value="取消" />
 			</div>
 		</form>
 	</div>
@@ -161,37 +149,43 @@
 <!-- 派发任务模态框完 -->
 <!-- 查看任务模态框 -->
 <div class="overlayer"></div>
-<div class="tip" id="tipCheck" style="height: 480px">
+<div class="tip" id="tipCheck" style="height: 440px">
 	<div class="tiptop text_right">
-		<span>创建任务</span><a></a>
+		<span>任务详情</span><a></a>
 		<!-- 这个a标签是模态框上的叉叉 -->
 	</div>
-	<div class="formbody">
-		<form id="" ng-submit="addTask()">
+	<div class="invorkInfo-div">
+		<fieldset>
+			<legend>任务信息</legend>
 			<ul class="forminfo">
-				<li><label>接收人</label><input type="text"
-					ng-model="task.receiver.user_name" class="dfinput" /></li>
-				<li><label>内容</label> <textarea name="" cols="" rows=""
-						class="textinput area_style" ng-model="task.task_remark" required></textarea></li>
-				<li><label>开始时间</label><input type="text"
-					ng-model="task.task_stime" class="dfinput"
-					placeholder="格式：2016-09-07" /></li>
-				<li><label>结束时间</label><input type="text" name="task1_etime"
-					ng-model="task.task_etime" class="dfinput"
-					placeholder="格式：2016-09-07" /></li>
+				<li><label>接收人：</label>{{task.receiver.user_name}}</li>
+				<li><label>任务类型：</label>{{task.task_type | taskType}}</li>
+				<li><label>任务状态：</label>{{task.task_state | taskState}}</li>
+				<li><label>开始时间：</label>{{task.task_stime}}</li>
+				<li><label>截止时间：</label>{{task.task_etime}}</li>
+				<li><div class="remark-div">备注：{{task.task_content}}</div></li>
 			</ul>
-		</form>
+		</fieldset>
 	</div>
 </div>
 <!-- 查看任务模态框完 -->
 <!-- 文书任务模态框 -->
 <div class="overlayer"></div>
-<div class="tip1">
+<div class="tip1" style="height: 400px">
 	<div class="tiptop">
 		<span>任务内容</span><a></a>
 		<!-- 这个a标签是模态框上的叉叉 -->
 	</div>
-
+	<div class="invorkInfo-div">
+		<fieldset>
+			<legend>任务信息</legend>
+			<ul class="forminfo">
+				<li><label>开始时间：</label>{{task.task_stime}}</li>
+				<li><label>截止时间：</label>{{task.task_etime}}</li>
+				<li><div class="remark-div">备注：{{task.task_content}}</div></li>
+			</ul>
+		</fieldset>
+	</div>
 	<!-- 文书任务具体内容 -->
 	<div class="formbody">
 		<form id="assistant1TaskList" ng-submit="finishTask1()">
@@ -214,8 +208,8 @@
 							ng-false-value="false" ng-model="fchat.task1.post" />邮寄
 					</div>
 					<div class="div-checkbox" ng-show="taskFile">
-						<input type="checkbox" ng-true-value="true" ng-disabled="disFile"
-							ng-false-value="false" ng-model="fchat.task1.file" />归档
+						<input type="checkbox" ng-true-value="true" ng-disabled="disFile" ng-false-value="false" ng-model="fchat.task1.file" />签收
+
 					</div></li>
 			</ul>
 			<!-- 按钮 -->
@@ -228,6 +222,26 @@
 	</div>
 </div>
 <!-- 文书任务模态框完 -->
+<!-- //完成任务模态框 -->
+<div class="tip" id="tipFinish" style="height: 220px">
+	<div class="tiptop">
+		<span>提示信息</span>
+	</div>
+
+	<div class="tipinfo">
+		<div class="tipright">
+			<p>请确认工作是否已经完成？</p>
+			<cite>如果是请点击确定按钮 ，否则请点取消。</cite>
+		</div>
+	</div>
+
+	<div class="tipbtn">
+		<input name="" type="button" class="sure" id="sureFinishTask"
+			value="确定" />&nbsp; <input name="" type="button" class="cancel"
+			id="cancelFinishTask" value="取消" />
+	</div>
+</div>
+<!-- //删除任务模态框 -->
 
 <script type="text/javascript">
 	$('.tablelist tbody tr:odd').addClass('odd');

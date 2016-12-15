@@ -9,11 +9,16 @@ package com.base.enums;
  */
 public enum ContractType {
 
-	规划(0), 可行性(1), 施工图(2), 评估(3), 其他(4);
+	传统光伏项目(0), 分布式(1), 光热(2), 其他(3);
 
 	public int value;
 
 	private ContractType(int value) {
 		this.value = value;
+	}
+	
+	public static String intToStr(int value) {
+		ContractType cont_type = ContractType.values()[value];
+		return cont_type.name();
 	}
 }

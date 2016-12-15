@@ -8,12 +8,13 @@
 <link href="${ctx}/css/admin.css" rel="stylesheet" type="text/css" />
 <link href="${ctx}/css/zhou.css" rel="stylesheet" type="text/css" />
 <link href="${ctx}/css/li.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="${ctx}/js/lib/jquery-1.9.1.min.js"></script>
 </head>
 
 <body style="background:url(${ctx}/images/topbg.gif) repeat-x;">
 	<header>
 		<div class="topleft">
-			<a href="main.html" target="_parent"><img class="img-logo"
+			<a href="/CIMS/login/toIndex.do" target="_parent"><img class="img-logo"
 				src="${ctx}/images/logo1.png" title="系统首页" /></a>
 		</div>
 
@@ -36,8 +37,8 @@
 		</div>
 		<div id="news">
 			<ul>
-				<li><a href="${ctx}/alarm/toAlarmPage.do#/debtAlarmList">收款超时：<b id="RnAlarmCnt"></b></a></li>
-				<li><a href="${ctx}/alarm/toAlarmPage.do#/overdueAlarmList">工程超时：<b id="PsAlarmCnt"></b></a></li>
+				<li><a href="${ctx}/alarm/toAlarmPage.do#/debtAlarmList">收款相关：<b id="RnAlarmCnt"></b></a></li>
+				<li><a href="${ctx}/alarm/toAlarmPage.do#/overdueAlarmList">工程相关：<b id="PsAlarmCnt"></b></a></li>
 				<li><a href="${ctx}/alarm/toAlarmPage.do#/taskAlarmList">任务超时：<b id="TskAlarmCnt"></b></a></li>
 				<li><a href="${ctx}/task/toTaskPage.do#/receiveTask">新任务：<b id="taskCnt"></b></a></li>
 			</ul>
@@ -47,8 +48,7 @@
 			<source src="${ctx}/audio/msg.wav"></source>
 		</audio>
 	</header>
-	<section class="containner">
-		<script type="text/javascript" src="${ctx}/js/lib/jquery-1.9.1.min.js"></script>
+	<section class="containner">		
 		<script type="text/javascript"
 			src="${ctx}/js/lib/jquery.json-2.2.min.js"></script>
 		<script type="text/javascript">
@@ -113,7 +113,7 @@
 				initData();
 				var msgCnt;
 				var title = document.title;
-				/* window.setInterval(showalert, 5000); */
+				window.setInterval(showalert, 1000*60*5);
 				function showalert() {
 					var lastMsgCnt = sessionStorage.getItem("msgCnt");
 					$.getJSON("/CIMS/login/getInitData.do", {}, function(data) {
@@ -144,7 +144,6 @@
 				$(".user").hover(function() {
 					$("#news").show();
 				}, function() {
-					/* $("#news").hide();   */
 				})
 				$(document).click(function() {
 					$("#news").hide();

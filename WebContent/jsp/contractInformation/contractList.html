@@ -11,7 +11,7 @@
 	<div class="tools">
 
 		<form class="toolbar">
-			<input name="" type="text" class="dfinput" id="cName" /> <input
+			<input name="" type="text" class="dfinput" id="cName" placeholder="合同名称关键字"/> <input
 				class="btn" type="submit" value="查询" ng-click="selectConByName()">
 		</form>
 
@@ -27,10 +27,12 @@
 			<tr>
 				<th>编号</th>
 				<th>合同名称</th>
-				<th>应收金额</th>
-				<th>实收金额</th>
+				<th>应收金额(万元)</th>
+				<th>实收金额(万元)</th>
+				<th>到款次数</th>
 				<th>工期阶段</th>
 				<th>收款节点</th>
+				<th>项目状态</th>
 				<th>合同状态</th>
 				<th>操作</th>
 			</tr>
@@ -38,18 +40,21 @@
 		<tbody>
 			<tr ng-repeat="con in contracts">
 				<td>{{$index + 1}}</td>
-				<td><a class="underline" href="#contractInfo" ng-click="getConId(con.cont_id)">{{con.cont_name}}</a></td>
-				<td>{{con.cont_money}}</td>
-				<td>{{con.rece_totalmoney}}</td>
-				<td>{{con.cur_prst}}</td>
-				<td>{{con.cur_reno}}</td>
-				<td>{{con.cont_state}}</td>
-				<td><a href="#contractInfo" class="tablelink underline"
-					ng-click="getConId(con.cont_id)">查看</a><a ng-show="flag==1"
-					ng-click="deleteContract()"
-					class="tablelink underline" has-permission='cDel'> 删除</a>
-					<a ng-show="flag==1" ng-click="newTask()" class="tablelink underline" has-permission='cTaskAdd'>新建任务</a>
-					</td>
+				<td><a class="underline" href="#contractInfo" ng-click="getConId(con.cont_id)">{{con.cont_name |cutString}}</a></td>
+				<td>{{con.cont_money |receFloat}}</td>
+				<td>{{con.remo_totalmoney |receFloat}}</td>
+				<td>{{con.remo_count}}</td>
+				<td>{{con.cur_prst | cutString}}</td>
+				<td>{{con.cur_reno | cutString}}</td>
+				<td>{{con.cont_state |conState}}</td>
+				<td>{{con.cont_isback |conIsBack}}</td>
+				<td>
+				    <a href="#contractInfo" class="tablelink underline" ng-click="getConId(con.cont_id)">查看</a>
+					<a ng-show="flag==1" ng-click="deleteContract()" class="tablelink underline" has-permission='cDel'> 删除</a> 
+					<a ng-show="flag==1" ng-click="newTask()" class="tablelink underline" has-permission='cTaskAdd'>新建任务</a> 
+					<a href="#contractRecord" ng-click="getConId(con.cont_id)" class="tablelink underline">操作记录</a>
+					<a ng-show="flag==1" ng-click="modifyStatus(con.cont_id)" class="tablelink underline" has-permission='cStateEdit'>项目状态</a>
+				</td>
 			</tr>
 		</tbody>
 	</table>
@@ -60,7 +65,7 @@
 </div>
 <!-- 新建任务模态框 -->
 <div class="overlayer"></div>
-<div class="tip">
+<div class="tip" id="tipType">
 	<div class="tiptop">
 		<span>新建任务</span><a></a><!-- 这个a标签是模态框上的叉叉 -->
 	</div>
@@ -78,11 +83,11 @@
 	</div>
 	<!-- 任务具体内容 -->
 	<div class="formbody">
-	<form id="addTask1-form" ng-submit="addTask1()" class="hidden">
+	<form id="addTask1-form" ng-submit="addNewTask()" class="hidden">
 		<ul class="forminfo">
 			<li><label>执行人</label> <select class="dfselect" 
-				ng-model="task1.receiver_id">
-					<option ng-repeat="user in users" value={{user.user_id}}>{{user.user_name}}</option>					
+				ng-model="task1.receiver_id" ng-options="user.user_id as user.user_name for user in users" required>
+					<option value="">请选择</option>					
 			</select></li>
 			<li><label>子任务</label>
 				<div class="div-checkbox">
@@ -102,6 +107,10 @@
 						ng-model="task1.post" />邮寄
 				</div>
 				<div class="div-checkbox">
+					<input type="checkbox" ng-true-value="true" ng-false-value="false"
+						ng-model="task1.file" />签收
+				</div>
+				<div class="div-checkbox">
 					<input type="checkbox" id="selectAll" ng-click="selectAllTask()" />全选
 				</div></li>
 			<li><label>开始时间</label><input type="text"
@@ -115,17 +124,17 @@
 		</ul>
 		<!-- 按钮 -->
 	<div class="tipbtn">
-		<input name="" type="button" class="sure" value="确定" ng-click="" />&nbsp; <input
+		<input name="" type="submit" class="sure" value="确定" ng-click="" />&nbsp; <input
 			name="" type="button" class="cancel" value="取消" />
 	</div>
 	</form>
 	
-	<form id="addTask2-form" ng-submit="addTask2()" class="hidden">
+	<form id="addTask2-form" ng-submit="addNewTask()" class="hidden">
 
 		<ul class="forminfo">
 			<li><label>执行人</label> <select class="dfselect"
-				ng-model="task2.receiver_id">
-					<option ng-repeat="user in users" value={{user.user_id}}>{{user.user_name}}</option>				
+				ng-model="task2.receiver_id" ng-options="user.user_id as user.user_name for user in users" required>
+					<option value="">请选择</option>				
 			</select></li>
 			<li><label>开始时间</label><input type="text" name="task2_stime"
 				placeholder="格式：2016-09-07" ng-model="task2.task_stime"
@@ -138,7 +147,7 @@
 		</ul>
 		<!-- 按钮 -->
 	<div class="tipbtn">
-		<input name="" type="button" class="sure" value="确定" ng-click="" />&nbsp; <input
+		<input name="" type="submit" class="sure" value="确定" ng-click="" />&nbsp; <input
 			name="" type="button" class="cancel" value="取消" />
 	</div>
 	</form>
@@ -146,5 +155,36 @@
 </div>
 <!-- 新建任务模态框完 -->
 
+<!-- 项目状态模态框 -->
+<div class="overlayer"></div>
+<div class="tip" id="tipStatus" style="height:200px;width:440px">
+	<div class="tiptop">
+		<span>项目状态</span><a></a><!-- 这个a标签是模态框上的叉叉 -->
+	</div>
+	<!-- 选择项目状态 -->
+	<div class="tipinfo">
+		<div class="statusType-div" style="margin-left:auto;margin-right:auto;overflow:hidden;width:190px">
+			<div class="radio-div">
+				<input class="statusType" type="radio" value="0" ng-model="status.status_type">在建
+			</div>
+			<div class="radio-div">
+				<input class="statusType" type="radio" value="1" ng-model="status.status_type">竣工
+			</div>
+			<div class="radio-div">
+				<input class="statusType" type="radio" value="2" ng-model="status.status_type">停建
+			</div>
+		</div>
+	</div>
+	<div class="formbody">
+	<form id="modifyStatus-form" ng-submit="modifyStatus()">
+		<!-- 按钮 -->
+	<div class="tipbtn" style="margin-left:112px">
+		<input name="" type="button" class="sureSend" value="确定" id="sureStatus"/>&nbsp; <input
+			name="" type="button" class="cancelSend" value="取消" id="cancelStatus"/>
+	</div>
+	</form>	 
+	</div>
+</div>
+<!-- 项目状态模态框完 -->
 
 

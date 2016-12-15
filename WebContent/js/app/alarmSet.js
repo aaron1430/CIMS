@@ -56,6 +56,22 @@ var alarmApp = angular
 								: data;
 					} ];
 				});
+alarmApp.directive('hasPermission', function($timeout) {
+	return {
+		restrict : 'ECMA',
+		link : function(scope, element, attr) {
+			var key = attr.hasPermission.trim(); // 获取页面上的权限值
+			console.log("获取页面上的权限值" + key);
+			var keys = permissionList;
+			console.log("获取后台的权限值" + keys);
+			var regStr = "\\s" + key + "\\s";
+			var reg = new RegExp(regStr);
+			if (keys.search(reg) < 0) {
+				element.css("display", "none");
+			}
+		}
+	};
+});
 
 alarmApp.run([ '$rootScope', '$location', function($rootScope, $location) {
 	$rootScope.$on('$routeChangeSuccess', function(evt, next, previous) {
@@ -166,7 +182,7 @@ alarmApp.controller('AlarmController', [
 			var isRemove;
 			// zq查看合同ID，并记入sessione
 			alarm.getContId = function(contId) {
-				sessionStorage.setItem('contId', contId);
+				sessionStorage.setItem('conId', contId);
 			};
 			// 获取报警ID
 			alarm.getAlarmId = function(alarId) {
@@ -196,7 +212,7 @@ alarmApp.controller('AlarmController', [
 			// bao根据状态查找报警列表
 			function selectAllAlarmLevel() {
 				services.selectAllAlarmLevel({}).success(function(data) {
-					alarm.alarmLevels = data;
+					alarm.alarmLevels = data.list;
 				});
 			}
 
@@ -248,6 +264,11 @@ alarmApp.controller('AlarmController', [
 					alarm.roles = data;
 					console.log(data);
 				});
+				alarm.alarmLevel = {
+					alle_days : 0,
+					alle_rank : 1,
+					role_id : null
+				};
 				$(".overlayer").fadeIn(200);
 				$(".tip").fadeIn(200);
 				$("#addAlarm-form").slideDown(200);
@@ -275,7 +296,7 @@ alarmApp.controller('AlarmController', [
 				return false;
 			};
 			// 修改报警设置
-			$(".sure2").click(function() {
+			alarm.editAlarmLevel=function() {
 				var alarmLl = JSON.stringify(alarm.editLevel);
 				console.log(alarmLl);
 				services.alarmLevelAdd({
@@ -290,7 +311,7 @@ alarmApp.controller('AlarmController', [
 
 				$(".overlayer").fadeOut(100);
 				$(".tip").fadeOut(100);
-			});
+			}
 			// 隐藏模态框
 			$(".tiptop a").click(function() {
 				$(".overlayer").fadeOut(200);
@@ -304,11 +325,9 @@ alarmApp.controller('AlarmController', [
 				$(".tip").fadeOut(100);
 			});
 			// 添加报警设置
-			$(".sure1").click(function() {
+			alarm.addAlarmLevel = function() {
 				var conId = sessionStorage.getItem("contractId");
-
 				var alarmLl = JSON.stringify(alarm.alarmLevel);
-				console.log(alarmLl);
 				services.alarmLevelAdd({
 					alle_rank : alarm.alarmLevel.alle_rank,
 					alle_days : alarm.alarmLevel.alle_days,
@@ -316,11 +335,12 @@ alarmApp.controller('AlarmController', [
 				}).success(function(data) {
 					alert("新建成功！");
 					selectAllAlarmLevel();
+					alarm.alarmLevel = "";
 				});
 
 				$(".overlayer").fadeOut(100);
 				$(".tip").fadeOut(100);
-			});
+			}
 			function findRoleFromCookie() {
 				var cookie = {};
 
@@ -339,8 +359,7 @@ alarmApp.controller('AlarmController', [
 					cookie[name.trim()] = value;
 					console.log("进来了,已经赋值" + name);
 					if (name.trim() == "role") {
-						sessionStorage.setItem("userRole",
-								value);
+						sessionStorage.setItem("userRole", value);
 					}
 
 				}
@@ -358,7 +377,7 @@ alarmApp.controller('AlarmController', [
 			}
 			function dateformat() {
 				var $dateFormat = $(".dateFormat");
-				var dateRegexp = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+				var dateRegexp = /^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/;
 				$(".dateFormat").blur(
 						function() {
 							if (!dateRegexp.test(this.value)) {
@@ -414,7 +433,7 @@ alarmApp.directive("dateFormat", function() {
 		require : 'ngModel',
 		scope : true,
 		link : function(scope, elem, attrs, controller) {
-			var dateRegexp = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+			var dateRegexp = /^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/;
 			// Model变化时执行
 			// 初始化指令时BU执行
 			scope.$watch(attrs.ngModel, function(val) {
@@ -457,73 +476,3 @@ alarmApp.filter('alarmState', function() {
 		return state;
 	}
 });
-app
-.directive(
-		'hasPermission',
-		function($timeout) {
-			return {
-				restrict : 'A',
-				link : function(scope, element, attr) {
-
-					var key = attr.hasPermission.trim(); // 获取页面上的权限值
-					console.log("获取页面上的权限值" + key);
-					/* console.log("cookie内容" + JSON.stringify(cookie)); */
-					/*
-					 * if (sessionStorage.getItem('userRole').trim() ==
-					 * "3") { element.css("display", "none"); }
-					 */
-					switch (sessionStorage.getItem('userRole').trim()) {
-					case "1":
-						var keys1 = " cBodyEdit cPsAdd cPsEdit cPsDel cRnAdd cRnEdit cRnDel bReceAdd tContCollect tInvoFinish bInvoAdd cAdd cHeadEdit cDel cTaskAdd tInvoAudit tContDetail ";
-						var regStr1 = "\\s" + key + "\\s";
-						var reg1 = new RegExp(regStr1);
-						if (keys1.search(reg1) < 0) {
-							element.css("display", "none");
-						}
-						break;
-					case "2":
-						var keys2 = " tContDetail ";
-						var regStr2 = "\\s" + key + "\\s";
-						var reg2 = new RegExp(regStr2);
-						if (keys2.search(reg2) < 0) {
-							element.css("display", "none");
-						}
-						break;
-					case "3":
-						var keys3 = " cBodyEdit cPsAdd cPsEdit cPsDel cRnAdd cRnEdit cRnDel bReceAdd tContCollect tInvoFinish ";
-						var regStr3 = "\\s" + key + "\\s";
-						var reg3 = new RegExp(regStr3);
-						if (keys3.search(reg3) < 0) {
-							element.css("display", "none");
-						}
-						break;
-					case "4":
-						var keys4 = " bInvoAdd tContDetail ";
-						var regStr4 = "\\s" + key + "\\s";
-						var reg4 = new RegExp(regStr4);
-						if (keys4.search(reg4) < 0) {
-							element.css("display", "none");
-						}
-						break;
-					case "5":
-						var keys5 = " cAdd cHeadEdit cDel cTaskAdd tInvoAudit tContDetail ";
-						var regStr5 = "\\s" + key + "\\s";
-						var reg5 = new RegExp(regStr5);
-						if (keys5.search(reg5) < 0) {
-							element.css("display", "none");
-						}
-						break;
-					}
-				}
-			};
-
-		});
-
-/*
- * app.directive('minLength', function () { return { restrict: 'A', require:
- * 'ngModel', scope: { 'min': '@' }, link: function (scope, ele, attrs,
- * controller) { scope.$watch(attrs.ngModel, function (val) { if (!val) {
- * return; } console.log(val); if (val.length <= scope.min) {
- * controller.$setValidity('minlength', false); } else {
- * controller.$setValidity('minlength', true); } }); } } });
- */

@@ -6,19 +6,21 @@
 			+ path + "/";
 %>
 <jsp:include page="/jsp/top.jsp" />
-<section class="main" ng-app="taskMgmt">
+<section id="ng-section" class="main">
 	<div ng-view></div>
 </section>
 <jsp:include page="/jsp/left.jsp" />
 <jsp:include page="/jsp/footer.jsp" />
 <script src="${ctx}/js/app/taskMgmt.js"></script>
 <script>
-	/* $(function(){
-		alert(window.location.href.indexOf('#')); 
-		if(window.location.href.indexOf('#')==-1) 
-		document.getElementById("taskFirst").click();
+	$(function(){
+		$('dd').find('ul').css("display","none");
+		$('#task-ul').css("display","block");
+		var currentPage = sessionStorage.getItem("currentPage");
+		if(currentPage){
+			$("#"+currentPage).addClass("active");
+		}
 	})
-	*/
 </script>
 
 </body>

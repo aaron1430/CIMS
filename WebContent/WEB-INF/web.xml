@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
-	http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+	<!-- <?xml version="1.0" encoding="UTF-8"?> <web-app version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
+		http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"> -->
+
 	<!-- 引入应用上下文 -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
@@ -19,7 +23,47 @@
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
+	<!-- 报错页面 -->
+	<error-page>
+		<error-code>404</error-code>
+		<location>/jsp/404.html</location>
+	</error-page>
+	<error-page>
+		<error-code>500</error-code>
+		<location>/jsp/500.html</location>
+	</error-page>
 
+	<!-- session过期设置相关 -->
+	<session-config>
+		<session-timeout>30</session-timeout>
+	</session-config>
+
+	<!-- session过滤器配置相关 -->
+	<filter>
+		<filter-name>SessionFilter</filter-name>
+		<filter-class>com.base.filter.SessionFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>SessionFilter</filter-name>
+		<url-pattern>/contract/*</url-pattern>
+		<url-pattern>/invoice/*</url-pattern>
+		<url-pattern>/user/*</url-pattern>
+		<url-pattern>/alarm/*</url-pattern>
+		<url-pattern>/receipt/*</url-pattern>
+		<url-pattern>/task/*</url-pattern>
+		<url-pattern>/receiveMoney/*</url-pattern>
+		<url-pattern>/role/*</url-pattern>
+		<url-pattern>/alarmLevel/*</url-pattern>
+		<url-pattern>/projectStage/*</url-pattern>
+		<url-pattern>/receiveNode/*</url-pattern>
+		<url-pattern>/subTask/*</url-pattern>
+		<url-pattern>/file/*</url-pattern>
+		<url-pattern>/reportForm/*</url-pattern>
+		<dispatcher>FORWARD</dispatcher>
+		<dispatcher>REQUEST</dispatcher>
+	</filter-mapping>
+
+	<!-- 编码配置相关 -->
 	<filter>
 		<filter-name>encodingFilter</filter-name>
 		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
@@ -43,6 +87,7 @@
 		<url-pattern>*.jsp</url-pattern>
 	</filter-mapping>
 
+	<!-- Spring mvc配置入口 -->
 	<servlet>
 		<servlet-name>springmvc</servlet-name>
 		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
@@ -58,11 +103,8 @@
 		<url-pattern>*.do</url-pattern>
 	</servlet-mapping>
 
+	<!-- 配置起始页 -->
 	<welcome-file-list>
 		<welcome-file>jsp/login.jsp</welcome-file>
 	</welcome-file-list>
-
-	<session-config>
-		<session-timeout>1800</session-timeout>
-	</session-config>
 </web-app>

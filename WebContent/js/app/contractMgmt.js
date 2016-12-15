@@ -57,15 +57,32 @@ var app = angular
 					} ];
 				});
 // 获取权限列表
+var permissionList;
+angular.element(document).ready(function() {
+	console.log("获取权限列表！");
+	$.get('/CIMS/login/getUserPermission.do', function(data) {
+		permissionList = data; // 
+		console.log("身份是：" + permissionList);
+		angular.bootstrap($("#ng-section"), [ 'contract' ]); // 手动加载angular模块
+	});
+});
 
-/*
- * var permissionList; angular.element(document).ready(function() {
- * console.log("获取权限列表！"); permissionList = "W"; // console.log("身份是：" +
- * permissionList); angular.bootstrap(document, ['contract']);
- * $.get('/CIMS/login/getUserPermission.do', function(data) { permissionList =
- * data.permission; // console.log("身份是：" + permissionList);
- * angular.bootstrap(document, ['contract']); }); });
- */
+app.directive('hasPermission', function($timeout) {
+	return {
+		restrict : 'ECMA',
+		link : function(scope, element, attr) {
+			var key = attr.hasPermission.trim(); // 获取页面上的权限值
+			console.log("获取页面上的权限值" + key);
+			var keys = permissionList;
+			console.log("获取后台的权限值" + keys);
+			var regStr = "\\s" + key + "\\s";
+			var reg = new RegExp(regStr);
+			if (keys.search(reg) < 0) {
+				element.css("display", "none");
+			}
+		}
+	};
+});
 
 /*
  * app.run([ 'permissions', function(permissions) {
@@ -170,6 +187,18 @@ app
 									{
 										templateUrl : '/CIMS/jsp/contractInformation/contractInfo.html',
 										controller : 'ContractController'
+									})
+							.when(
+									'/contractRecord',
+									{
+										templateUrl : '/CIMS/jsp/contractInformation/contractRecord.html',
+										controller : 'ContractController'
+									})
+							.when(
+									'/stopedContract',
+									{
+										templateUrl : '/CIMS/jsp/contractInformation/contractList.html',
+										controller : 'ContractController'
 									});
 				} ]);
 app.constant('baseUrl', '/CIMS/');
@@ -212,7 +241,6 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 	};
 
 	services.selectConByName = function(data) {
-		console.log("按名字查找合同");
 		return $http({
 			method : 'post',
 			url : baseUrl + 'contract/selectConByName.do',
@@ -221,7 +249,6 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 	};
 	// 分页获取合同数据
 	services.selectConByPage = function(data) {
-		console.log("按页码查找合同");
 		return $http({
 			method : 'post',
 			url : baseUrl + 'contract/selectConByPage.do',
@@ -238,7 +265,6 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 	};
 
 	services.addContract = function(data, file) {
-		console.log(data);
 		return $http({
 			method : 'post',
 			url : baseUrl + 'contract/addContract.do',
@@ -294,6 +320,14 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 			data : data
 		});
 	};
+	// lwt根据合同ID获取合同操作记录
+	services.selectContRecordByContId = function(data) {
+		return $http({
+			method : 'post',
+			url : baseUrl + 'contractRecord/selectContRecordByContId.do',
+			data : data
+		});
+	};
 	// 获取文件列表
 	services.selectFileByConId = function(data) {
 		return $http({
@@ -302,11 +336,7 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 			data : data
 		});
 	};
-<<<<<<< HEAD
 	// 删除文件
-=======
-
->>>>>>> 65790194486bbc18378273f041e19e703c6bc5fd
 	services.deleteFileById = function(data) {
 		return $http({
 			method : 'post',
@@ -315,13 +345,6 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 		});
 	};
 
-	services.addReceipt = function(data) {
-		return $http({
-			method : 'post',
-			url : baseUrl + 'receipt/createReceipt.do',
-			data : data
-		});
-	};
 	// zq从设计部取出项目经理人选
 	services.selectUsersFromDesign = function(data) {
 		return $http({
@@ -354,7 +377,7 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 			data : data
 		});
 	};
-<<<<<<< HEAD
+
 	// 10.25zq工期完成
 	services.finishPrst = function(data) {
 		return $http({
@@ -402,6 +425,30 @@ app.factory('services', [ '$http', 'baseUrl', function($http, baseUrl) {
 			data : data
 		});
 	}
+	services.selectPrstById = function(data) {
+		return $http({
+			method : 'post',
+			url : baseUrl + 'projectStage/selectPrstById.do',
+			data : data
+		});
+	};
+	// lwt:修改项目状态
+	services.modifyStatus = function(data) {
+		return $http({
+			method : 'post',
+			url : baseUrl + 'contract/modifyStatus.do',
+			data : data
+		});
+	};
+	// lwt:停建合同
+	services.getStopedContract = function(data) {
+		/* console.log("发送请求获取合同信息"); */
+		return $http({
+			method : 'post',
+			url : baseUrl + 'contract/selectContract.do',
+			data : data
+		});
+	};
 	return services;
 } ]);
 
@@ -432,7 +479,6 @@ app
 							contract.getDebtContract = function() {
 								services.getDebtContract({}).success(
 										function(data) {
-											console.log("获取欠款合同成功！");
 											contract.contracts = data;
 										});
 							};
@@ -440,7 +486,6 @@ app
 							contract.getOverdueContract = function() {
 								services.getOverdueContract({}).success(
 										function(data) {
-											console.log("获取逾期合同成功！");
 											contract.contracts = data.list;
 										});
 							};
@@ -450,7 +495,15 @@ app
 									findType : "4",
 									contName : ""
 								}).success(function(data) {
-									console.log("获取逾期合同成功！");
+									contract.contracts = data.list;
+								});
+							};
+							// lwt:获取停建合同
+							contract.getStopedContract = function() {
+								services.getFinishedContract({
+									findType : "5",
+									contName : ""
+								}).success(function(data) {
 									contract.contracts = data.list;
 								});
 							};
@@ -460,29 +513,40 @@ app
 									contName : $("#cName").val(),
 									page : 1
 								}).success(function(data) {
-									console.log("选择合同成功！");
 									contract.contracts = data.list;
 									contract.totalPage = data.totalPage;
 								});
 							};
 							// 添加合同
 							contract.addContract = function() {
+								var province = $("#province").val();
+								var city = $("#city").val();
+								contract.contract.province = province;
+								contract.contract.city = city;
 								var conFormData = JSON
 										.stringify(contract.contract);
-								console.log(contract.file);
-								console.log(contract.contract.cont_cheader);
 								services.addContract({
 									contract : conFormData
 								}, contract.file).success(function(data) {
-									console.log("合同创建成功时保存的合同ID：" + data);
 									sessionStorage.setItem("conId", data);
+									contract.contract.cont_id = data;
+									$("#province").val(province);
+									$("#province").change();
+									$("#city").val(city);
+									$("#city").change();
+									$("#addContract").hide();
+									$("#updateContract").show();
 									alert("创建合同成功！");
 								});
 							};
 							// 修改合同
 							contract.updateContract = function() {
-								var conFormData = JSON.stringify(contract.cont);
-								console.log(conFormData);
+								var province = $("#province").val();
+								var city = $("#city").val();
+								contract.contract.province = province;
+								contract.contract.city = city;
+								var conFormData = JSON
+										.stringify(contract.contract);
 								services.updateConById({
 									contract : conFormData
 								}).success(function(data) {
@@ -563,56 +627,101 @@ app
 							// 添加文书任务
 							contract.addTask1 = function() {
 								var conId = sessionStorage.getItem("conId");
-								console.log(conId);
 								if (conId.trim() == "") {
 									alert("请先录入合同信息！");
 									return false;
 								}
 								var task1 = JSON.stringify(contract.task1);
-								console.log(task1);
 								services.addTask({
 									task : task1,
 									taskType : "1", // 1代表文书任务
 									conId : conId
 								}).success(function(data) {
 									alert("添加文书任务成功！");
+									$("#disTask1").attr("disabled", "true");
 								});
 							};
 							// 添加执行管控任务
 							contract.addTask2 = function() {
 								var conId = sessionStorage.getItem("conId");
-								console.log(conId);
 								if (conId.trim() == "") {
 									alert("请先录入合同信息！");
 									return false;
 								}
 								var task2 = JSON.stringify(contract.task2);
-								console.log(task2);
 								services.addTask({
 									task : task2,
 									taskType : "2", // 2代表执行管控任务
 									conId : conId
 								}).success(function(data) {
-									alert("添加执行管控任务成功！");
+									alert("添加补录合同任务成功！");
+									$("#disTask2").attr("disabled", "true");
 								});
 							};
 
 							// zq：读取合同的信息
 							function selectContractById() {
 								var cont_id = sessionStorage.getItem('conId');
-								console.log("合同id：" + cont_id);
 								services
 										.selectContractById({
 											cont_id : cont_id
 										})
 										.success(
 												function(data) {
-													contract.cont = data;
-													contract.contract = data;
-													contract.contract.cont_stime = new Date(
-															data.cont_stime)
-															.toLocaleDateString()
-															.replace(/\//g, '-');
+													contract.cont = data.contract;
+													contract.contract = data.contract;
+													if (data.contract.cont_stime) {
+														contract.contract.cont_stime = changeDateType(data.contract.cont_stime);
+													}
+
+												});
+							}
+							// 在修改合同的时候将已选的项目阶段勾选
+							function getContProStage() {
+								var cont_id = sessionStorage.getItem('conId');
+								services
+										.selectContractById({
+											cont_id : cont_id
+										})
+										.success(
+												function(data) {
+													contract.cont = data.contract;
+													if (data.contract.pro_stage) {
+														var strs = data.contract.pro_stage
+																.split(",");
+														for (var i = 0; i < strs.length; i++) {
+
+															switch (strs[i]) {
+															case "0":
+																contract.proStage0 = "true";
+																break;
+															case "1":
+																contract.proStage1 = "true";
+																break;
+															case "2":
+																contract.proStage2 = "true";
+																break;
+															case "3":
+																contract.proStage3 = "true";
+																break;
+															case "4":
+																contract.proStage4 = "true";
+																break;
+															case "5":
+																contract.proStage5 = "true";
+																break;
+															case "6":
+																contract.proStage6 = "true";
+																break;
+															case "7":
+																contract.proStage7 = "true";
+																break;
+															case "8":
+																contract.proStage8 = "true";
+																break;
+															}
+														}
+													}
 
 												});
 							}
@@ -623,9 +732,6 @@ app
 									cont_id : cont_id
 								}).success(function(data) {
 									contract.prst = data.list;
-									/* arrPrst */
-									console.log(contract.prst[0].prst_content);
-
 								});
 							}
 
@@ -650,20 +756,46 @@ app
 
 							contract.selectAllTask = function() {
 								var $selectAll = $("#selectAll");
-								console.log($selectAll.is(':checked'));
 								if ($selectAll.is(':checked')) {
 									contract.task1.print = "true";
 									contract.task1.sign = "true";
 									contract.task1.seal = "true";
 									contract.task1.post = "true";
+									contract.task1.file = "true";
 								} else {
 									contract.task1.print = "false";
 									contract.task1.sign = "false";
 									contract.task1.seal = "false";
 									contract.task1.post = "false";
+									contract.task1.file = "false";
 								}
 							}
 
+							// 项目阶段的全选
+							contract.selectAllProStage = function() {
+								var $selectAll = $("#selectAllProStage");
+								if ($selectAll.is(':checked')) {
+									contract.proStage0 = "true";
+									contract.proStage1 = "true";
+									contract.proStage2 = "true";
+									contract.proStage3 = "true";
+									contract.proStage4 = "true";
+									contract.proStage5 = "true";
+									contract.proStage6 = "true";
+									contract.proStage7 = "true";
+									contract.proStage8 = "true";
+								} else {
+									contract.proStage0 = "false";
+									contract.proStage1 = "false";
+									contract.proStage2 = "false";
+									contract.proStage3 = "false";
+									contract.proStage4 = "false";
+									contract.proStage5 = "false";
+									contract.proStage6 = "false";
+									contract.proStage7 = "false";
+									contract.proStage8 = "false";
+								}
+							}
 							// 合同，收款节点，工期阶段的详情
 							contract.showContInfo = function() {
 								$('#contInformation').show();
@@ -698,46 +830,6 @@ app
 								$('#renoHide').hide();
 							}
 
-							// zq添加添加收据功能
-							// zq查看合同ID，并记入sessione
-							contract.addReceipt = function(contId, renoId) {
-								/*
-								 * var renoId = this.node.reno_id; var contId =
-								 * this.node.contract.cont_id;
-								 */
-								sessionStorage.setItem("conId", contId);
-								sessionStorage.setItem("renoId", renoId);
-								$(".overlayer").fadeIn(200);
-								$("#tipAdd").fadeIn(200);
-
-							};
-							$("#sureAdd").click(
-									function() {
-										var receFormData = JSON
-												.stringify(contract.receipt);
-										services.addReceipt(
-												{
-													receipt : receFormData,
-													renoId : sessionStorage
-															.getItem("renoId"),
-													contId : sessionStorage
-															.getItem("conId")
-												}).success(function(data) {
-
-											$("#tipAdd").fadeOut(100);
-											$(".overlayer").fadeOut(200);
-											selectRenoByContId();
-											alert("收据添加成功！");
-											contract.receipt = "";
-
-										});
-									});
-
-							$("#cancelAdd").click(function() {
-								$("#tipAdd").fadeOut(100);
-								$(".overlayer").fadeOut(200);
-								contract.receipt = "";
-							});
 							// zq：添加工期阶段的单项控件
 							function addStage() {// 动态添加工期阶段
 								$scope.fchat = new Object();
@@ -781,35 +873,41 @@ app
 								 */
 							}
 							// 添加单个工期阶段
-							contract.addOneStage = function() {// 动态添加工期阶段
-								$scope.fchat = new Object();
-								console.log("工期阶段"
-										+ JSON.stringify($scope.fchat));
-								$scope.fchat.stages = [ {
-									key : 0,
-									value : ""
-								} ];
+							contract.addOneStage = function() {
+								if (!contract.contract.manager) {
+									alert("请先选择项目设总！");
+									return false;
+								}
+								// 动态添加工期阶段
 								$(".overlayer").fadeIn(200);
 								$("#prstAdd").fadeIn(200);
+								// 输入时间的input默认值设置为当前时间
+								var date = new Date();
+								var timeNow = date.getFullYear() + "-"
+										+ (date.getMonth() + 1) + "-"
+										+ (date.getDate());
+								contract.prStage = {
+									prst_etime : timeNow
+
+								};
 
 							}
-							$("#sureAddPrst").click(
-									function() {
-										var conId = sessionStorage
-												.getItem("conId");
-										var prstFormData = JSON
-												.stringify($scope.fchat);
-										console.log(prstFormData);
-										services.addProjectStage({
-											projectStage : prstFormData,
-											cont_id : conId
-										}).success(function(data) {
-											alert("添加工期成功！");
-											selectPrstByContId();
-										});
-										$(".overlayer").fadeOut(100);
-										$("#prstAdd").fadeOut(100);
-									});
+							contract.addOneProStage = function() {
+								var conId = sessionStorage.getItem("conId");
+								var prstFormData = JSON
+										.stringify(contract.prStage);
+								console.log("添加单个工期" + prstFormData);
+								services.addProjectStage({
+									projectStage : prstFormData,
+									cont_id : conId
+								}).success(function(data) {
+									alert("添加工期成功！");
+									selectPrstByContId();
+								});
+
+								$(".overlayer").fadeOut(100);
+								$("#prstAdd").fadeOut(100);
+							}
 
 							$("#cancelAddPrst").click(function() {
 
@@ -818,17 +916,35 @@ app
 							});
 							// zq：补录合同
 							contract.repeatAddContract = function() {
-								console.log(contract.contract);
-								var conFormData = JSON
-										.stringify(contract.contract);
-								console.log(conFormData);
-								services.repeatAddContract({
-									contract : conFormData,
-									cont_id : sessionStorage.getItem('conId')
-								}).success(function(data) {
-									/* window.sessionStorage.setItem("contractId",); */
-									alert("添加合同成功！");
-								});
+								var list = document
+										.getElementsByClassName("proStage");
+								contract.contract.proStage = "";
+								for (var i = 0; i < list.length; i++) {
+									if (list[i].checked) {
+										contract.contract.proStage += ""
+												+ list[i].value + ",";
+									}
+								}
+
+								if (contract.contract.proStage) {
+									var conFormData = JSON
+											.stringify(contract.contract);
+									services.repeatAddContract(
+											{
+												contract : conFormData,
+												cont_id : sessionStorage
+														.getItem('conId')
+											}).success(function(data) {
+										/* window.sessionStorage.setItem("contractId",); */
+										alert("修改合同成功！");
+										window.history.go(-1);
+										window.location.reload();
+									});
+
+								} else {
+									alert("请选择项目阶段！");
+								}
+
 							};
 							// zq：添加工期阶段到数据库
 							contract.addProjectStage = function() {
@@ -869,7 +985,6 @@ app
 								var cont_id = sessionStorage.getItem("conId");
 								var renoFormData = JSON
 										.stringify($scope.rnchat);
-								console.log(renoFormData);
 								services.addReceiveNode({
 									receiveNode : renoFormData,
 									cont_id : cont_id
@@ -912,35 +1027,34 @@ app
 							}
 							// 添加单个收款节点
 							contract.addOneNode = function() {// 动态添加工期阶段
-
-								$scope.rnchat = new Object();
-								$scope.rnchat.nodes = [ {
-									key : 0,
-									value : ""
-								} ];
 								selectPrstByContId();
 								$(".overlayer").fadeIn(200);
 								$("#renoAdd").fadeIn(200);
-
+								// 输入时间的input默认值设置为当前时间
+								var date = new Date();
+								var timeNow = date.getFullYear() + "-"
+										+ (date.getMonth() + 1) + "-"
+										+ (date.getDate());
+								contract.reNode = {
+									reno_time : timeNow
+								};
 							}
-							$("#sureAddReno").click(
-									function() {
+							contract.addOneReNode = function() {
+								var conId = sessionStorage.getItem("conId");
+								var renoFormData = JSON
+										.stringify(contract.reNode);
+								console.log(renoFormData);
+								services.addReceiveNode({
+									receiveNode : renoFormData,
+									cont_id : conId
+								}).success(function(data) {
+									selectRenoByContId();
+									alert("添加收款节点成功！");
+								});
 
-										var conId = sessionStorage
-												.getItem("conId");
-										var renoFormData = JSON
-												.stringify($scope.rnchat);
-										console.log(renoFormData);
-										services.addReceiveNode({
-											receiveNode : renoFormData,
-											cont_id : conId
-										}).success(function(data) {
-											selectRenoByContId();
-											alert("添加收款节点成功！");
-										});
-										$(".overlayer").fadeOut(100);
-										$(".tip").fadeOut(100);
-									});
+								$(".overlayer").fadeOut(100);
+								$(".tip").fadeOut(100);
+							}
 
 							$("#cancelAddReno").click(function() {
 
@@ -951,7 +1065,7 @@ app
 							function selectUsersFromDesign() {
 								services.selectUsersFromDesign({}).success(
 										function(data) {
-											contract.userDepts = data;
+											contract.userDepts = data.list;
 										});
 							}
 							function findRoleFromCookie() {
@@ -963,14 +1077,11 @@ app
 								var list = cookies.split(";");
 								for (var i = 0; i < list.length; i++) {
 									var cookieString = list[i];
-									/* console.log("cookie内容" + cookieString); */
 									var p = cookieString.indexOf("=");
 									var name = cookieString.substring(0, p);
 									var value = cookieString.substring(p + 1,
 											cookieString.length);
-									console.log(name);
 									cookie[name.trim()] = value;
-									console.log("进来了,已经赋值" + name);
 									if (name.trim() == "role") {
 										sessionStorage.setItem("userRole",
 												value);
@@ -979,28 +1090,36 @@ app
 								}
 							}
 							// 10.25zq确认完工
-							contract.finishPrst = function(prstId) {
+							contract.finishPrst = function() {
+								var prstId = this.stage.prst_id;
+								sessionStorage.setItem("prstId", prstId);
+								$("#tipFinish").fadeIn(200);
+								$(".overlayer").fadeIn(200);
+							}
+							$("#sureFinishPrst").click(function() {
 								services.finishPrst({
-									prstId : prstId
+									prstId : sessionStorage.getItem("prstId")
 								}).success(function(data) {
 									alert("确认完工成功！");
 									selectContractById(); // 根据ID获取合同信息
 									selectPrstByContId();// 根据合同查看工期阶段
 									selectRenoByContId();// 根据合同ID查看收款节点
-								});
-							}
+									$("#tipFinish").fadeOut(100);
+									$(".overlayer").fadeOut(200);
+								})
+							});
+							$("#cancelFinishPrst").click(function() {
+								$("#tipFinish").fadeOut(100);
+								$(".overlayer").fadeOut(200);
+							});
 							// 10.25zq删除工期和收款
-							// 10.25zq删除工期阶段
 							contract.delPrst = function() {
-
-								console.log(this.stage.prst_state);
 								if (this.stage.prst_state == 0) {
 									var prstId = this.stage.prst_id;
 									sessionStorage.setItem("delType", "prst");
 									sessionStorage.setItem("prstId", prstId);
 									$("#tipDel").fadeIn(200);
 									$(".overlayer").fadeIn(200);
-									console.log("工期阶段的ID" + prstId);
 								} else {
 									alert("该工期已完成不能删除！");
 								}
@@ -1014,7 +1133,6 @@ app
 									sessionStorage.setItem("renoId", renoId);
 									$("#tipDel").fadeIn(200);
 									$(".overlayer").fadeIn(200);
-									console.log("收款节点的ID" + renoId);
 								} else {
 									alert("该收款节点处于未收全款或已收全款，不能删除！");
 								}
@@ -1066,12 +1184,26 @@ app
 							contract.modifyPrst = function() {
 								var prstId = this.stage.prst_id;
 								sessionStorage.setItem("prstId", prstId);
-								contract.prStage = this.stage;
-								contract.prStage.prst_etime = changeDateType(this.stage.prst_etime);
+								services
+										.selectPrstById({
+											prstId : prstId
+										})
+										.success(
+												function(data) {
+													contract.prStage = data.projectStage;
+													$scope.prStage.prst_etime = changeDateType(data.projectStage.prst_etime);
+
+												});
+
+								/*
+								 * contract.prStage = this.stage;
+								 * contract.prStage.prst_etime =
+								 * changeDateType(time);
+								 */
 								$(".overlayer").fadeIn(200);
 								$("#prstModify").fadeIn(200);
 							}
-							$("#sureModifyPrst").click(function() {
+							contract.modifyOnePrst = function() {
 								$("#prstModify").fadeOut(100);
 								$(".overlayer").fadeOut(200);
 								var prst = JSON.stringify($scope.prStage);
@@ -1081,28 +1213,27 @@ app
 								}).success(function(data) {
 									alert("修改成功！");
 									selectPrstByContId();
+									selectRenoByContId();
 								});
-							});
+							}
 
 							$("#cancelModifyPrst").click(function() {
 								$("#prstModify").fadeOut(100);
 								$(".overlayer").fadeOut(200);
+
 							});
 							// 10.25zq修改收款节点
 							contract.modifyReno = function() {
 								var renoId = this.node.reno_id;
 								contract.reNode = null;
-
 								services
 										.selectRenoById({
 											renoId : renoId
 										})
 										.success(
 												function(data) {
-
 													contract.reNode = data.receiveNode;
 													$scope.reNode.reno_time = changeDateType(data.receiveNode.reno_time);
-
 												});
 								sessionStorage.setItem("renoId", renoId);
 								/*
@@ -1114,19 +1245,19 @@ app
 								$("#renoModify").fadeIn(200);
 
 							}
-							$("#sureModifyReno").click(function() {
+							contract.modifyOneReno = function() {
 								$("#renoModify").fadeOut(100);
 								$(".overlayer").fadeOut(200);
 								var reno = JSON.stringify($scope.reNode);
+								console.log("修改收款节点" + reno);
 								services.modifyReno({
 									renoId : sessionStorage.getItem("renoId"),
 									receiveNode : reno
 								}).success(function(data) {
 									alert("修改成功！");
 									selectRenoByContId();
-
 								});
-							});
+							}
 
 							$("#cancelModifyReno").click(function() {
 								$("#renoModify").fadeOut(100);
@@ -1134,22 +1265,33 @@ app
 							});
 							// 10.25zq更改时间的样式
 							function changeDateType(date) {
-								var DateTime = new Date(date.time)
-										.toLocaleDateString().replace(/\//g,
-												'-');
+								console.log("传进来的时间" + date);
+								if (date != "") {
+									var DateTime = new Date(date.time)
+											.toLocaleDateString().replace(
+													/\//g, '-');
+								} else {
+									var DateTime = "";
+								}
+								console.log("转化后的的时间" + DateTime);
 								return DateTime;
 							}
 							// 10.26zq实现选择工期时的联动
 							contract.prstChange = function(type) {
 								// 0表示添加，1表示修改
 								if (type == "0") {
-									
+
 									if ($("#nodePrstAdd").val() != "") {
 										$("#nodeContentAdd").val(
 												contract.prst[$("#nodePrstAdd")
 														.val()].prst_content);
+
+										contract.reNode.reno_content = contract.prst[$(
+												"#nodePrstAdd").val()].prst_content;
+
 									} else {
 										$("#nodeContentAdd").val("");
+										contract.reNode.reno_content = "";
 									}
 
 								} else if (type == "1") {
@@ -1158,18 +1300,51 @@ app
 												contract.prst[$(
 														"#nodePrstModify")
 														.val()].prst_content);
+										contract.reNode.reno_content = contract.prst[$(
+												"#nodePrstModify").val()].prst_content;
 									} else {
 										$("#nodeContentModify").val("");
+										contract.reNode.reno_content = "";
 									}
 
 								}
 							}
+							// lwt:点击项目状态时弹出模态框
+							contract.modifyStatus = function(conId) {
+								sessionStorage.setItem("conId", conId);
+								$(".overlayer").fadeIn(200);
+								$("#tipStatus").fadeIn(200);
+								contract.status = {
+									status_type : this.con.cont_state
+								}
+
+							};
+							$("#sureStatus").click(function() {
+								var conId = sessionStorage.getItem("conId");
+								services.modifyStatus({
+									contState : contract.status.status_type,
+									contId : sessionStorage.getItem("conId")
+								}).success(function(data) {
+									if (data = "true") {
+										alert("修改项目状态成功！");
+										initData();
+									} else {
+										alert("修改项目状态失败！");
+									}
+								});
+								$(".overlayer").fadeOut(100);
+								$("#tipStatus").fadeOut(100);
+							});
+
+							$("#cancelStatus").click(function() {
+								$(".overlayer").fadeOut(100);
+								$("#tipStatus").fadeOut(100);
+							});
+
 							// 初始化页面信息
 							function initData() {
-								console.log("初始化页面信息");
 								// 点击创建任务时弹出模态框
 								contract.newTask = function() {
-									console.log("弹出模态框！");
 									var conId = this.con.cont_id;
 									services.getAllUsers().success(
 											function(data) {
@@ -1177,8 +1352,21 @@ app
 												sessionStorage.setItem("conId",
 														conId);
 											});
+									// 输入时间的input默认值设置为当前时间
+									var date = new Date();
+									var timeNow = date.getFullYear() + "-"
+											+ (date.getMonth() + 1) + "-"
+											+ (date.getDate());
+									contract.task1 = {
+										task_stime : timeNow,
+										task_etime : timeNow
+									}
+									contract.task2 = {
+										task_stime : timeNow,
+										task_etime : timeNow
+									}
 									$(".overlayer").fadeIn(200);
-									$(".tip").fadeIn(200);
+									$("#tipType").fadeIn(200);
 									return false;
 								};
 
@@ -1188,51 +1376,37 @@ app
 									$(".tip").fadeOut(200);
 								});
 
-								$(".sure")
-										.click(
-												function() {
-													var conId = sessionStorage
-															.getItem("conId");
-													if (contract.task.task_type == "1") {
-														var task1 = JSON
-																.stringify(contract.task1);
-														services
-																.addTask(
-																		{
-																			task : task1,
-																			taskType : "1", // 1代表文书任务
-																			conId : conId
-																		})
-																.success(
-																		function(
-																				data) {
-																			alert("添加文书任务成功！");
-																		});
-													} else if (contract.task.task_type == "0") {
-														var task2 = JSON
-																.stringify(contract.task2);
-														services
-																.addTask(
-																		{
-																			task : task2,
-																			taskType : "2", // 2代表执行管控任务
-																			conId : conId
-																		})
-																.success(
-																		function(
-																				data) {
-																			alert("添加执行管控任务成功！");
-																		});
-													}
-													$(".overlayer")
-															.fadeOut(100);
-													$(".tip").fadeOut(100);
-												});
+								contract.addNewTask = function() {
+									var conId = sessionStorage.getItem("conId");
+									if (contract.task.task_type == "1") {
+										var task1 = JSON
+												.stringify(contract.task1);
+										services.addTask({
+											task : task1,
+											taskType : "1", // 1代表文书任务
+											conId : conId
+										}).success(function(data) {
+											alert("添加文书任务成功！");
+										});
+									} else if (contract.task.task_type == "0") {
+										var task2 = JSON
+												.stringify(contract.task2);
+										services.addTask({
+											task : task2,
+											taskType : "2", // 2代表执行管控任务
+											conId : conId
+										}).success(function(data) {
+											alert("添加执行管控任务成功！");
+										});
+									}
+									$(".overlayer").fadeOut(100);
+									$("#tipType").fadeOut(100);
+								}
 
 								$(".cancel").click(function() {
 									/* sessionStorage.setItem("conId", ""); */
 									$(".overlayer").fadeOut(100);
-									$(".tip").fadeOut(100);
+									$("#tipType").fadeOut(100);
 								});
 
 								$(".taskType").change(function() {
@@ -1351,7 +1525,6 @@ app
 								} else if ($location.path().indexOf(
 										'/contractAdd') == 0) {
 									// 这里先获取人员列表
-									console.log("进入添加合同页面！");
 									services.getAllUsers().success(
 											function(data) {
 												contract.users = data;
@@ -1371,7 +1544,11 @@ app
 										task_stime : timeNow,
 										task_etime : timeNow
 									};
-									console.log("离开添加合同页面！");
+									contract.contract = {
+										cont_type : 0,
+										cont_rank : 1
+									};
+									/* contract.contract.cont_type="0"; */
 								} else if ($location.path()
 										.indexOf('/prstInfo') == 0) {
 									selectContractById(); // 根据ID获取合同信息
@@ -1392,33 +1569,93 @@ app
 									selectContractById(); // 根据ID获取合同信息
 									selectPrstByContId(); // 根据合同ID获取该合同的工期阶段
 									selectRenoByContId(); // 根据合同ID获取该合同的收款节点
+									$("#contInformation").hide();
 									$("#renoInformation").hide();
 									$("#prstInformation").hide();
 								} else if ($location.path().indexOf(
 										'/contractUpdate') == 0) {
-									selectContractById(); // 根据ID获取合同信息
+									// 根据ID获取合同信息
+									var cont_id = sessionStorage
+											.getItem('conId');
+									services
+											.selectContractById({
+												cont_id : cont_id
+											})
+											.success(
+													function(data) {
+														contract.cont = data.contract;
+														contract.contract = data.contract;
+														if (data.contract.cont_stime) {
+															contract.contract.cont_stime = changeDateType(data.contract.cont_stime);
+														}
+														$("#province")
+																.val(
+																		data.contract.province);
+														$("#province").change();
+														$("#city")
+																.val(
+																		data.contract.city);
+														$("#city").change();
+													});
 									selectFileByConId(sessionStorage
 											.getItem('conId'));
 								} else if ($location.path().indexOf(
 										'/contractDetail') == 0) {
 									selectUsersFromDesign();// 查找设计部人员
-
 									selectContractById(); // 根据ID获取合同信息
 									addStage();// 显示工期阶段录入界面
-									addNode();
+
 								} else if ($location.path().indexOf(
 										'/contractModify') == 0) {
 									selectUsersFromDesign();// 查找设计部人员
 									selectContractById(); // 根据ID获取合同信息
+									getContProStage();
 									$("#prstContainer").hide();
 									$("#renoContainer").hide();
+
+								} else if ($location.path().indexOf(
+										'/contractRecord') == 0) {
+
+									services.selectContRecordByContId(
+											{
+												cont_id : sessionStorage
+														.getItem("conId")
+											}).success(function(data) {
+										contract.records = data.list;
+									});
+								} else if ($location.path().indexOf(
+										'/stopedContract') == 0) { // lwt:获取停建合同信息
+									contract.flag = 0; // 标志位，用于控制按钮是否显示
+									services
+											.getFinishedContract({
+												page : 1,
+												findType : "5",
+												contName : ""
+											})
+											.success(
+													function(data) {
+														contract.contracts = data.list;
+														contract.totalPage = data.totalPage;
+														var $pages = $(".tcdPageCode");
+														if ($pages.length != 0) {
+															$pages
+																	.createPage({
+																		pageCount : contract.totalPage,
+																		current : 1,
+																		backFn : function(
+																				p) {
+																			contract
+																					.getStopedContract(p); // 点击页码时获取第p页的数据
+																		}
+																	});
+														}
+													});
 								}
 							}
 
 							initData();
 							findRoleFromCookie();
 							$scope.$on('reGetData', function() {
-								console.log("重新获取数据！");
 								initData();
 							});
 
@@ -1438,810 +1675,24 @@ app
 												'display', 'none');
 									});
 
+							// 验证金额输入格式
+							var $numberFormat = $(".numberFormat");
+							var numberRegexp = /^\d+(\.{0,1}\d+){0,1}$/;
+							$(".numberFormat").blur(
+									function() {
+										if (!numberRegexp.test(this.value)) {
+											$(this).parent().children("span")
+													.css('display', 'inline');
+										}
+									});
+							$(".numberFormat").click(
+									function() {
+										$(this).parent().children("span").css(
+												'display', 'none');
+									});
+
 						} ]);
-=======
 
-	return services;
-} ]);
-
-app.controller('ContractController', [
-		'$scope',
-		'services',
-		'$location',
-		'FileUploader',
-		function($scope, services, $location, FileUploader) {
-			// 合同
-			var contract = $scope;
-			contract.flag = 0; // 标志位，用于控制按钮是否显示
-			// 获取合同列表
-			contract.getContractList = function(page) {
-				services.getContractList({
-					page : page
-				}).success(function(data) {
-					contract.contracts = data.list;
-					contract.totalPage = data.totalPage;
-				});
-			};
-			// 获取欠款合同
-			contract.getDebtContract = function() {
-				services.getDebtContract({}).success(function(data) {
-					console.log("获取欠款合同成功！");
-					contract.contracts = data;
-				});
-			};
-			// 获取逾期合同
-			contract.getOverdueContract = function() {
-				services.getOverdueContract({}).success(function(data) {
-					console.log("获取逾期合同成功！");
-					contract.contracts = data.list;
-				});
-			};
-			// 获取终结合同
-			contract.getFinishedContract = function() {
-				services.getFinishedContract({
-					findType : "4",
-					contName : ""
-				}).success(function(data) {
-					console.log("获取逾期合同成功！");
-					contract.contracts = data.list;
-				});
-			};
-			// 通过合同名获取合同信息
-			contract.selectConByName = function() {
-				services.selectConByName({
-					contName : $("#cName").val(),
-					page : 1
-				}).success(function(data) {
-					console.log("选择合同成功！");
-					contract.contracts = data.list;
-					contract.totalPage = data.totalPage;
-				});
-			};
-			// 添加合同
-			contract.addContract = function() {
-				var conFormData = JSON.stringify(contract.contract);
-				console.log(contract.file);
-				console.log(contract.contract.cont_cheader);
-				services.addContract({
-					contract : conFormData
-				}, contract.file).success(function(data) {
-					console.log("合同创建成功时保存的合同ID：" + data);
-					sessionStorage.setItem("conId", data);
-					alert("创建合同成功！");
-				});
-			};
-			// 修改合同
-			contract.updateContract = function() {
-				var conFormData = JSON.stringify(contract.cont);
-				console.log(conFormData);
-				services.updateConById({
-					contract : conFormData
-				}).success(function(data) {
-					alert("修改合同成功！");
-				});
-			};
-			// zq查看合同ID，并记入sessionStorage
-			contract.getConId = function(conId) {
-				sessionStorage.setItem('conId', conId);
-				alert(conId);
-			};
-
-			function preventDefault(e) {
-				if (e && e.preventDefault) {
-					// 阻止默认浏览器动作(W3C)
-					e.preventDefault();
-				} else {
-					// IE中阻止函数器默认动作的方式
-					window.event.returnValue = false;
-					return false;
-				}
-			}
-			// 删除合同
-			contract.deleteContract = function(e) {
-				var pageType = $location.path();
-				var conId = this.con.cont_id;
-				var msg = "确认删除该合同？";
-				if (confirm(msg) == true) {
-					services.deleteContract({
-						conId : conId,
-						pageType : pageType.substring(1, pageType.length)
-					}).success(function(data) {
-						contract.contracts = data.list;
-						contract.totalPage = data.totalPage;
-						alert("删除成功！");
-						preventDefault(e);
-					});
-				} else {
-					preventDefault(e);
-				}
-			}
-			// 删除上传的文件
-			contract.deleteFile = function(e) {
-				preventDefault(e);
-				var fileId = this.file.file_id;
-				console.log("文件的ID为：" + fileId);
-				services.deleteFileById({
-					fileId : fileId
-				}).success(function(data) {
-					selectFileByConId(sessionStorage.getItem("conId"));
-					alert("删除文件成功！");
-				});
-			};
-			// 添加文书任务
-			contract.addTask1 = function() {
-				var conId = sessionStorage.getItem("conId");
-				console.log(conId);
-				if (conId.trim() == "") {
-					alert("请先录入合同信息！");
-					return false;
-				}
-				var task1 = JSON.stringify(contract.task1);
-				console.log(task1);
-				services.addTask({
-					task : task1,
-					taskType : "1", // 1代表文书任务
-					conId : conId
-				}).success(function(data) {
-					alert("添加文书任务成功！");
-				});
-			};
-			// 添加执行管控任务
-			contract.addTask2 = function() {
-				var conId = sessionStorage.getItem("conId");
-				console.log(conId);
-				if (conId.trim() == "") {
-					alert("请先录入合同信息！");
-					return false;
-				}
-				var task2 = JSON.stringify(contract.task2);
-				console.log(task2);
-				services.addTask({
-					task : task2,
-					taskType : "2", // 2代表执行管控任务
-					conId : conId
-				}).success(function(data) {
-					alert("添加执行管控任务成功！");
-				});
-			};
-
-			// zq：读取合同的信息
-			function selectContractById() {
-				var cont_id = sessionStorage.getItem('conId');
-				console.log("合同id：" + cont_id);
-				services.selectContractById({
-					cont_id : cont_id
-				}).success(
-						function(data) {
-							contract.cont = data;
-							contract.contract = data;
-							contract.contract.cont_stime = new Date(
-									data.cont_stime).toLocaleDateString()
-									.replace(/\//g, '-');
-
-						});
-			}
-			// zq：根据合同ID查询工期阶段的内容
-			function selectPrstByContId() {
-				var cont_id = sessionStorage.getItem('conId');
-				services.selectPrstByContId({
-					cont_id : cont_id
-				}).success(function(data) {
-					contract.prst = data.list;
-				});
-			}
-			// zq：根据合同ID查询收款节点的内容
-			function selectRenoByContId() {
-				var cont_id = sessionStorage.getItem('conId');
-				services.selectRenoByContId({
-					cont_id : cont_id
-				}).success(function(data) {
-					contract.reno = data.list;
-				});
-			}
-
-			// 获取跟合同相关的上传文件列表
-			function selectFileByConId(conId) {
-				services.selectFileByConId({
-					conId : conId
-				}).success(function(data) {
-					contract.fileList = data.list;
-				});
-			}
-
-			contract.selectAllTask = function() {
-				var $selectAll = $("#selectAll");
-				console.log($selectAll.is(':checked'));
-				if ($selectAll.is(':checked')) {
-					$(":checkbox").attr("checked", true);
-				} else {
-					$(":checkbox").attr("checked", false);
-				}
-			}
-
-			// 合同，收款节点，工期阶段的详情
-			contract.showContInfo = function() {
-				$('#contInformation').show();
-				$('#contShow').hide();
-				$('#contHide').show();
-			}
-			contract.hideContInfo = function() {
-
-				$('#contInformation').hide();
-				$('#contShow').show();
-				$('#contHide').hide();
-			}
-			contract.showPrstInfo = function() {
-				$('#prstInformation').show();
-				$('#prstShow').hide();
-				$('#prstHide').show();
-			}
-			contract.hidePrstInfo = function() {
-				$('#prstInformation').hide();
-				$('#prstShow').show();
-				$('#prstHide').hide();
-			}
-			contract.showRenoInfo = function() {
-				$('#renoInformation').show();
-				$('#renoShow').hide();
-				$('#renoHide').show();
-			}
-			contract.hideRenoInfo = function() {
-
-				$('#renoInformation').hide();
-				$('#renoShow').show();
-				$('#renoHide').hide();
-			}
-
-			// zq添加添加收据功能
-			// zq查看合同ID，并记入sessione
-			contract.addReceipt = function() {
-				var renoId = this.node.reno_id;
-				var contId = this.node.contract.cont_id;
-				$(".overlayer").fadeIn(200);
-				$("#tipAdd").fadeIn(200);
-				$("#sureAdd").click(function() {
-					var receFormData = JSON.stringify(contract.receipt);
-					services.addReceipt({
-						receipt : receFormData,
-						renoId : renoId,
-						contId : contId
-					}).success(function(data) {
-
-						$("#tipAdd").fadeOut(100);
-						$(".overlayer").fadeOut(200);
-						selectRenoByContId();
-						alert("收据添加成功！");
-						contract.receipt = "";
-
-					});
-				});
-
-				$("#cancelAdd").click(function() {
-					$("#tipAdd").fadeOut(100);
-					$(".overlayer").fadeOut(200);
-					contract.receipt = "";
-				});
-
-			};
-
-			// zq：添加工期阶段的单项控件
-			function addStage() {// 动态添加工期阶段
-				$scope.fchat = new Object();
-				$scope.fchat.stages = [ {
-					key : 0,
-					value : ""
-				} ];
-				// 初始化时由于只有1条回复，所以不允许删除
-				$scope.fchat.canDescStage = false;
-				// 增加回复数
-				$scope.fchat.incrStage = function($index) {
-					$scope.fchat.stages.splice($index + 1, 0, {
-						key : new Date().getTime(),
-						value : ""
-
-					});
-					// 初始化时由于只有1条回复，所以不允许删除
-					$scope.fchat.canDescStage = false;
-					// 增加回复数
-					$scope.fchat.incrStage = function($index) {
-						$scope.fchat.stages.splice($index + 1, 0, {
-							key : new Date().getTime(),
-							value : ""
-						});
-						// 用时间戳作为每个item的key
-						// 增加新的回复后允许删除
-						$scope.fchat.canDescStage = true;
-
-					} // 减少回复数
-					$scope.fchat.decrStage = function($index) {
-
-						// 如果回复数大于1，删除被点击回复
-						if ($scope.fchat.stages.length > 1) {
-							$scope.fchat.stages.splice($index, 1);
-						}
-						// 如果回复数为1，不允许删除
-						if ($scope.fchat.stages.length == 1) {
-							$scope.fchat.canDescStage = false;
-						}
-					};
-					// 动态添加工期
-					// 将字符串连接起来
-					/*
-					 * $scope.fchat.combineReplies = function() { var cr = "";
-					 * for (var i = 0; i < $scope.fchat.stages.length; i++) { cr +=
-					 * "#" + $scope.fchat.stages[i].value; }
-					 * 
-					 * return cr; }
-					 */
-				}
-				// 添加单个工期阶段
-				contract.addOneStage = function() {// 动态添加工期阶段
-					$scope.fchat = new Object();
-					console.log("工期阶段" + JSON.stringify($scope.fchat));
-					$scope.fchat.stages = [ {
-						key : 0,
-						value : ""
-					} ];
-					$(".overlayer").fadeIn(200);
-					$("#prstAdd").fadeIn(200);
-					$("#sureAddPrst").click(function() {
-						var conId = sessionStorage.getItem("conId");
-						var prstFormData = JSON.stringify($scope.fchat);
-						console.log(prstFormData);
-						services.addProjectStage({
-							projectStage : prstFormData,
-							cont_id : conId
-						}).success(function(data) {
-							alert("添加工期成功！");
-							selectPrstByContId();
-						});
-						$(".overlayer").fadeOut(100);
-						$("#prstAdd").fadeOut(100);
-					});
-					// 用时间戳作为每个item的key
-					// 增加新的回复后允许删除
-					$scope.fchat.canDescStage = true;
-
-				} // 减少回复数
-				$scope.fchat.decrStage = function($index) {
-
-					// 如果回复数大于1，删除被点击回复
-					if ($scope.fchat.stages.length > 1) {
-						$scope.fchat.stages.splice($index, 1);
-					}
-					// 如果回复数为1，不允许删除
-					if ($scope.fchat.stages.length == 1) {
-						$scope.fchat.canDescStage = false;
-					}
-				}
-				// 动态添加工期
-				// 将字符串连接起来
-				/*
-				 * $scope.fchat.combineReplies = function() { var cr = ""; for
-				 * (var i = 0; i < $scope.fchat.stages.length; i++) { cr += "#" +
-				 * $scope.fchat.stages[i].value; }
-				 * 
-				 * return cr; }
-				 */
-			}
-			// 添加单个工期阶段
-			contract.addOneStage = function() {// 动态添加工期阶段
-				$scope.fchat = new Object();
-				console.log("工期阶段" + JSON.stringify($scope.fchat));
-				$scope.fchat.stages = [ {
-					key : 0,
-					value : ""
-				} ];
-				$(".overlayer").fadeIn(200);
-				$("#prstAdd").fadeIn(200);
-				$("#sureAddPrst").click(function() {
-					var conId = sessionStorage.getItem("conId");
-					var prstFormData = JSON.stringify($scope.fchat);
-					console.log(prstFormData);
-					services.addProjectStage({
-						projectStage : prstFormData,
-						cont_id : conId
-					}).success(function(data) {
-						alert("添加工期成功！");
-						selectPrstByContId();
-					});
-					$(".overlayer").fadeOut(100);
-					$("#prstAdd").fadeOut(100);
-				});
-
-				$("#cancelAddPrst").click(function() {
-
-					$(".overlayer").fadeOut(100);
-					$("#prstAdd").fadeOut(100);
-				});
-
-			}
-
-			// zq：补录合同
-			contract.repeatAddContract = function() {
-				console.log(contract.contract);
-				var conFormData = JSON.stringify(contract.contract);
-				console.log(conFormData);
-				services.repeatAddContract({
-					contract : conFormData,
-					cont_id : sessionStorage.getItem('conId')
-				}).success(function(data) {
-					/* window.sessionStorage.setItem("contractId",); */
-					alert("添加合同成功！");
-				});
-			};
-			// zq：添加工期阶段到数据库
-			contract.addProjectStage = function() {
-				var cont_id = sessionStorage.getItem("conId");
-				var prstFormData = JSON.stringify($scope.fchat);
-				services.addProjectStage({
-					projectStage : prstFormData,
-					cont_id : cont_id
-				}).success(function(data) {
-					alert("添加工期成功！");
-					addNode();
-					selectPrstByContId();
-					$("#addReceiveNode").show();
-				});
-			}
-			// ps显示图片
-			contract.psShowDel = function(num) {
-				$("#ps" + num + "").find("img").css('visibility', 'visible');
-			}
-			// ps显示图片
-			contract.psHideDel = function(num) {
-				$("#ps" + num + "").find("img").css('visibility', 'hidden');
-			}
-			// rn显示图片
-			contract.rnShowDel = function(num) {
-				$("#rn" + num + "").find("img").css('visibility', 'visible');
-			}
-			// rn显示图片
-			contract.rnHideDel = function(num) {
-				$("#rn" + num + "").find("img").css('visibility', 'hidden');
-			}
-			// zq：添加收款节点到数据库
-			contract.addReceiveNode = function() {
-				var cont_id = sessionStorage.getItem("conId");
-				var renoFormData = JSON.stringify($scope.rnchat);
-				console.log(renoFormData);
-				services.addReceiveNode({
-					receiveNode : renoFormData,
-					cont_id : cont_id
-				}).success(function(data) {
-					alert("添加节点成功！");
-				});
-			}
-			// zq添加收款节点控件
-			function addNode() {// 动态添加工期阶段
-				$scope.rnchat = new Object();
-				$scope.rnchat.nodes = [ {
-					key : 0,
-					value : ""
-				} ];
-				// 初始化时由于只有1条回复，所以不允许删除
-				$scope.rnchat.canDescNode = false;
-				// 增加回复数
-				$scope.rnchat.incrNode = function($index) {
-
-					$scope.rnchat.nodes.splice($index + 1, 0, {
-						key : new Date().getTime(),
-						value : ""
-					});
-					// 用时间戳作为每个item的key
-					// 增加新的回复后允许删除
-					$scope.rnchat.canDescNode = true;
-
-				} // 减少回复数
-				$scope.rnchat.decrNode = function($index) {
-
-					// 如果回复数大于1，删除被点击回复
-					if ($scope.rnchat.nodes.length > 1) {
-						$scope.rnchat.nodes.splice($index, 1);
-					}
-					// 如果回复数为1，不允许删除
-					if ($scope.rnchat.nodes.length == 1) {
-						$scope.rnchat.canDescNode = false;
-					}
-				}
-			}
-			// 添加单个收款节点
-			contract.addOneNode = function() {// 动态添加工期阶段
-
-				$scope.rnchat = new Object();
-				$scope.rnchat.nodes = [ {
-					key : 0,
-					value : ""
-				} ];
-				selectPrstByContId();
-				$(".overlayer").fadeIn(200);
-				$("#renoAdd").fadeIn(200);
-				$("#sureAddReno").click(function() {
-
-					var conId = sessionStorage.getItem("conId");
-					var renoFormData = JSON.stringify($scope.rnchat);
-					console.log(renoFormData);
-					services.addReceiveNode({
-						receiveNode : renoFormData,
-						cont_id : conId
-					}).success(function(data) {
-						selectRenoByContId();
-						alert("添加收款节点成功！");
-					});
-					$(".overlayer").fadeOut(100);
-					$(".tip").fadeOut(100);
-				});
-
-				$("#cancelAddReno").click(function() {
-
-					$(".overlayer").fadeOut(100);
-					$(".tip").fadeOut(100);
-				});
-
-			}
-
-			// zq：从设计部查找人员
-			function selectUsersFromDesign() {
-				services.selectUsersFromDesign({}).success(function(data) {
-					contract.userDepts = data;
-				});
-			}
-			// 初始化页面信息
-			function initData() {
-				console.log("初始化页面信息");
-				// 点击创建任务时弹出模态框
-				contract.newTask = function() {
-					console.log("弹出模态框！");
-					var conId = this.con.cont_id;
-					services.getAllUsers().success(function(data) {
-						contract.users = data;
-						sessionStorage.setItem("conId", conId);
-					});
-					$(".overlayer").fadeIn(200);
-					$(".tip").fadeIn(200);
-					return false;
-				};
-
-				$(".tiptop a").click(function() {
-					sessionStorage.setItem("conId", "");
-					$(".overlayer").fadeOut(200);
-					$(".tip").fadeOut(200);
-				});
-
-				$(".sure").click(function() {
-					var conId = sessionStorage.getItem("conId");
-					if (contract.task.task_type == "1") {
-						var task1 = JSON.stringify(contract.task1);
-						services.addTask({
-							task : task1,
-							taskType : "1", // 1代表文书任务
-							conId : conId
-						}).success(function(data) {
-							alert("添加文书任务成功！");
-						});
-					} else if (contract.task.task_type == "0") {
-						var task2 = JSON.stringify(contract.task2);
-						services.addTask({
-							task : task2,
-							taskType : "2", // 2代表执行管控任务
-							conId : conId
-						}).success(function(data) {
-							alert("添加执行管控任务成功！");
-						});
-					}
-					$(".overlayer").fadeOut(100);
-					$(".tip").fadeOut(100);
-				});
-
-				$(".cancel").click(function() {
-					sessionStorage.setItem("conId", "");
-					$(".overlayer").fadeOut(100);
-					$(".tip").fadeOut(100);
-				});
-
-				$(".taskType").change(function() {
-					if (contract.task.task_type == "1") {
-						$("#addTask1-form").slideDown(200);
-						$("#addTask2-form").hide();
-					} else if (contract.task.task_type == "0") {
-						$("#addTask1-form").hide();
-						$("#addTask2-form").slideDown(200);
-					}
-				});
-
-				if ($location.path().indexOf('/contractList') == 0) { // 如果是合同列表页
-					contract.flag = 1; // 标志位，用于控制按钮是否显示
-					services.getContractList({
-						page : 1
-					}).success(function(data) {
-						// 合同列表分页
-						contract.contracts = data.list;
-						contract.totalPage = data.totalPage;
-						var $pages = $(".tcdPageCode");
-						if ($pages.length != 0) {
-							$pages.createPage({
-								pageCount : contract.totalPage,
-								current : 1,
-								backFn : function(p) {
-									contract.getContractList(p); // 点击页码时获取第p页的数据
-								}
-							});
-						}
-						/*
-						 * // 点击创建任务时弹出模态框 contract.newTask = function() {
-						 * console.log("弹出模态框！"); var conId = this.con.cont_id;
-						 * services.getAllUsers().success(function(data) {
-						 * contract.users = data;
-						 * sessionStorage.setItem("contractId", conId); });
-						 * $(".overlayer").fadeIn(200); $(".tip").fadeIn(200);
-						 * return false; };
-						 * 
-						 * $(".tiptop a").click(function() {
-						 * sessionStorage.setItem("contractId", "");
-						 * $(".overlayer").fadeOut(200); $(".tip").fadeOut(200);
-						 * });
-						 * 
-						 * $(".sure").click(function() { var conId =
-						 * sessionStorage.getItem("contractId"); if
-						 * (contract.task.task_type == "1") { var task1 =
-						 * JSON.stringify(contract.task1); services.addTask({
-						 * task : task1, taskType : "1",// 1代表文书任务 conId : conId
-						 * }).success(function(data) { alert("添加文书任务成功！"); }); }
-						 * else if (contract.task.task_type == "0") { var task2 =
-						 * JSON.stringify(contract.task2); services.addTask({
-						 * task : task2, taskType : "2",// 2代表执行管控任务 conId :
-						 * conId }).success(function(data) {
-						 * alert("添加执行管控任务成功！"); }); }
-						 * $(".overlayer").fadeOut(100); $(".tip").fadeOut(100);
-						 * });
-						 * 
-						 * $(".cancel").click(function() {
-						 * sessionStorage.setItem("contractId", "");
-						 * $(".overlayer").fadeOut(100); $(".tip").fadeOut(100);
-						 * });
-						 * 
-						 * $(".taskType").change(function() { if
-						 * (contract.task.task_type == "1") {
-						 * $("#addTask1-form").slideDown(200);
-						 * $("#addTask2-form").hide(); } else if
-						 * (contract.task.task_type == "0") {
-						 * $("#addTask1-form").hide();
-						 * $("#addTask2-form").slideDown(200); } });
-						 */
-					});
-
-				} else if ($location.path().indexOf('/debtContract') == 0) {
-					contract.flag = 1; // 标志位，用于控制按钮是否显示
-					services.getDebtContract({
-						page : 1
-					}).success(function(data) {
-						contract.contracts = data.list;
-						contract.totalPage = data.totalPage;
-						var $pages = $(".tcdPageCode");
-						if ($pages.length != 0) {
-							$pages.createPage({
-								pageCount : contract.totalPage,
-								current : 1,
-								backFn : function(p) {
-									contract.getDebtContract(p); // 点击页码时获取第p页的数据
-								}
-							});
-						}
-					});
-				} else if ($location.path().indexOf('/overdueContract') == 0) {
-					contract.flag = 1; // 标志位，用于控制按钮是否显示
-					services.getOverdueContract({
-						page : 1
-					}).success(function(data) {
-						contract.contracts = data.list;
-						contract.totalPage = data.totalPage;
-						var $pages = $(".tcdPageCode");
-						if ($pages.length != 0) {
-							$pages.createPage({
-								pageCount : contract.totalPage,
-								current : 1,
-								backFn : function(p) {
-									contract.getOverdueContract(p); // 点击页码时获取第p页的数据
-								}
-							});
-						}
-					});
-				} else if ($location.path().indexOf('/finishedContract') == 0) { // 获取终结合同信息
-					contract.flag = 0; // 标志位，用于控制按钮是否显示
-					services.getFinishedContract({
-						page : 1,
-						findType : "4",
-						contName : ""
-					}).success(function(data) {
-						contract.contracts = data.list;
-						contract.totalPage = data.totalPage;
-						var $pages = $(".tcdPageCode");
-						if ($pages.length != 0) {
-							$pages.createPage({
-								pageCount : contract.totalPage,
-								current : 1,
-								backFn : function(p) {
-									contract.getFinishedContract(p); // 点击页码时获取第p页的数据
-								}
-							});
-						}
-					});
-				} else if ($location.path().indexOf('/contractAdd') == 0) {
-					// 这里先获取人员列表
-					console.log("进入添加合同页面！");
-					services.getAllUsers().success(function(data) {
-						contract.users = data;
-						sessionStorage.setItem("conId", "");
-					});
-					// 输入时间的input默认值设置为当前时间
-					var date = new Date();
-					var timeNow = date.getFullYear() + "-"
-							+ (date.getMonth() + 1) + "-" + (date.getDate());
-					contract.task1 = {
-						task_stime : timeNow,
-						task_etime : timeNow
-					};
-					contract.task2 = {
-						task_stime : timeNow,
-						task_etime : timeNow
-					};
-					console.log("离开添加合同页面！");
-				} else if ($location.path().indexOf('/prstInfo') == 0) {
-					selectContractById(); // 根据ID获取合同信息
-					selectPrstByContId(); // 根据合同ID获取该合同的工期阶段
-					selectRenoByContId(); // 根据合同ID获取该合同的收款节点
-					$("#renoInformation").hide();
-					$("#contInformation").hide();
-				} else if ($location.path().indexOf('/renoInfo') == 0) {
-					selectContractById(); // 根据ID获取合同信息
-					selectPrstByContId(); // 根据合同ID获取该合同的工期阶段
-					selectRenoByContId(); // 根据合同ID获取该合同的收款节点
-					$("#contInformation").hide();
-					$("#prstInformation").hide();
-				} else if ($location.path().indexOf('/contractInfo') == 0) {
-					// zq添加查找合同详情
-					selectContractById(); // 根据ID获取合同信息
-					selectPrstByContId(); // 根据合同ID获取该合同的工期阶段
-					selectRenoByContId(); // 根据合同ID获取该合同的收款节点
-					$("#renoInformation").hide();
-					$("#prstInformation").hide();
-				} else if ($location.path().indexOf('/contractUpdate') == 0) {
-					selectContractById(); // 根据ID获取合同信息
-					selectFileByConId(sessionStorage.getItem('conId'));
-				} else if ($location.path().indexOf('/contractDetail') == 0) {
-					selectUsersFromDesign();// 查找设计部人员
-
-					selectContractById(); // 根据ID获取合同信息
-					addStage();// 显示工期阶段录入界面
-				} else if ($location.path().indexOf('/contractModify') == 0) {
-					selectUsersFromDesign();// 查找设计部人员
-					selectContractById(); // 根据ID获取合同信息
-					$("#prstContainer").hide();
-					$("#renoContainer").hide();
-				}
-			}
-
-			initData();
-
-			$scope.$on('reGetData', function() {
-				console.log("重新获取数据！");
-				initData();
-			});
-
-			// 验证日期输入格式
-			var $dateFormat = $(".dateFormat");
-			var dateRegexp = /^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/;
-			$(".dateFormat").blur(function() {
-				if (!dateRegexp.test(this.value)) {
-					$(this).parent().children("span").css('display', 'inline');
-				}
-			});
-			$(".dateFormat").click(function() {
-				$(this).parent().children("span").css('display', 'none');
-			});
-
-		} ]);
->>>>>>> 65790194486bbc18378273f041e19e703c6bc5fd
 app
 		.controller(
 				"UploadController",
@@ -2250,8 +1701,6 @@ app
 						'FileUploader',
 						function($scope, FileUploader) {
 							/* ！！！上传文件 */
-							console.log("上传时获得合同ID："
-									+ sessionStorage.getItem("conId"));
 							var uploader = $scope.uploader = new FileUploader({
 								url : '/CIMS/file/upload.do',
 							});
@@ -2315,11 +1764,7 @@ app
 										response, status, headers);
 							};
 							uploader.onCompleteAll = function() {
-<<<<<<< HEAD
 								alert("文件上传成功！");
-=======
-								console.info('onCompleteAll');
->>>>>>> 65790194486bbc18378273f041e19e703c6bc5fd
 							};
 							console.info('uploader', uploader);
 							/* ！！！上传文件完 */
@@ -2327,12 +1772,11 @@ app
 // 小数过滤器
 app.filter('receFloat', function() {
 	return function(input) {
-		if (input == null) {
+		if (!input) {
 			var money = parseFloat('0').toFixed(2);
 		} else {
 			var money = parseFloat(input).toFixed(2);
 		}
-
 		return money;
 	}
 });
@@ -2346,6 +1790,8 @@ app.filter('conState', function() {
 			state = "竣工";
 		else if (input == "2")
 			state = "停建";
+		else if (!input)
+			state = "";
 		return state;
 	}
 });
@@ -2357,6 +1803,8 @@ app.filter('conInitiation', function() {
 			initiation = "否";
 		else if (input == "1")
 			initiation = "是";
+		else if (!input)
+			initiation = "";
 
 		return initiation;
 	}
@@ -2369,6 +1817,8 @@ app.filter('conHasproxy', function() {
 			hasproxy = "否";
 		else if (input == "1")
 			hasproxy = "是";
+		else if (!input)
+			hasproxy = "";
 
 		return hasproxy;
 	}
@@ -2378,10 +1828,25 @@ app.filter('conAvetaxpayer', function() {
 	return function(input) {
 		var avetaxpayer = "";
 		if (input == "0")
-			avetaxpayer = "否";
+			avetaxpayer = "一般纳税人";
 		else if (input == "1")
-			avetaxpayer = "是";
+			avetaxpayer = "小规模纳税人";
+		else if (!input)
+			avetaxpayer = "";
 
+		return avetaxpayer;
+	}
+});
+// 发票类型的判断的判断
+app.filter('conInvoiceType', function() {
+	return function(input) {
+		var avetaxpayer = "";
+		if (input == "0")
+			avetaxpayer = "增值税专用发票";
+		else if (input == "1")
+			avetaxpayer = "增值税普通发票";
+		else if (!input)
+			avetaxpayer = "";
 		return avetaxpayer;
 	}
 });
@@ -2390,18 +1855,89 @@ app.filter('conType', function() {
 	return function(input) {
 		var type = "";
 		if (input == "0")
-			type = "规划";
+			type = "传统光伏项目";
 		else if (input == "1")
-			type = "可行性";
+			type = "分布式";
 		else if (input == "2")
-			type = "施工图";
+			type = "光热";
 		else if (input == "3")
-			type = "评估";
-		else if (input == "4")
 			type = "其他";
+		else if (!input)
+			type = "";
 		return type;
 	}
 });
+
+// 合同项目阶段的判断
+app.filter('conProStage', function() {
+	return function(input) {
+		var type = "";
+		if (input) {
+			console.log(input);
+			strs = input.split(","); // 字符分割
+			console.log("项目阶段" + strs);
+			for (i = 0; i < strs.length; i++) {
+				var j = i + 1;
+				switch (strs[i]) {
+				case "0":
+					type += "  " + j + "、规划  ;  ";
+					break;
+				case "1":
+					type += "  " + j + "、预可研  ;      ";
+					break;
+				case "2":
+					type += "  " + j + "、可研  ;      ";
+					break;
+				case "3":
+					type += "  " + j + "、项目建议书  ;      ";
+					break;
+				case "4":
+					type += "  " + j + "、初步设计  ;      ";
+					break;
+				case "5":
+					type += "  " + j + "、发包、招标设计  ;      ";
+					break;
+				case "6":
+					type += "  " + j + "、施工详图  ;      ";
+					break;
+				case "7":
+					type += "  " + j + "、竣工图  ;       ";
+					break;
+				case "8":
+					type += "  " + j + "、其他   ;   ";
+					break;
+				default:
+					type += " ";
+					break;
+				}
+			}
+			return type;
+		}
+	}
+});
+
+// 合同项目阶段的判断
+app.filter('conCompanyType', function() {
+	return function(input) {
+		var type = "";
+		if (input == "0")
+			type = "国有企业";
+		else if (input == "1")
+			type = "事业单位";
+		else if (input == "2")
+			type = "民营企业";
+		else if (input == "3")
+			type = "国外企业";
+		else if (input == "4")
+			type = "政府机关";
+		else if (input == "5")
+			type = "其他";
+		else if (!input)
+			type = "";
+		return type;
+	}
+});
+
 // 工期阶段的判断
 app.filter('prstType', function() {
 	return function(input) {
@@ -2410,6 +1946,8 @@ app.filter('prstType', function() {
 			type = "未完成";
 		else if (input == "1")
 			type = "已完成";
+		else if (!input)
+			type = "";
 
 		return type;
 	}
@@ -2426,6 +1964,8 @@ app.filter('renoType', function() {
 			type = "已付全款";
 		else if (input == "3")
 			type = "提前到款";
+		else if (!input)
+			type = "";
 		return type;
 	}
 });
@@ -2433,13 +1973,39 @@ app.filter('renoType', function() {
 app.filter('dateType', function() {
 	return function(input) {
 		var type = "";
-		if (input != null) {
+		if (input) {
 			type = new Date(input).toLocaleDateString().replace(/\//g, '-');
 		}
 
 		return type;
 	}
 });
+// 截取任务内容
+app.filter('cutString', function() {
+	return function(input) {
+		var content = "";
+		if (input != "") {
+			var shortInput = input.substr(0, 8);
+			content = shortInput + "……";
+		}
+
+		return content;
+	}
+});
+app.filter('dateTimeType',
+		function() {
+			return function(input) {
+				var type = "";
+				if (input != null) {
+					var date = new Date(input).toLocaleDateString().replace(
+							/\//g, '-');
+					var time = new Date(input).toLocaleTimeString()
+					type = date + "  " + time;
+				}
+
+				return type;
+			}
+		});
 // 等级的判断
 app.filter('conRank', function() {
 	return function(input) {
@@ -2448,7 +2014,30 @@ app.filter('conRank', function() {
 			rank = "重要";
 		else if (input == "1")
 			rank = "一般";
+		else if (!input)
+			rank = "";
 		return rank;
+	}
+});
+// 合同状态的判断
+app.filter('conIsBack', function() {
+	return function(input) {
+		var status = "";
+		if (input == "0")
+			status = "待办";
+		else if (input == "1")
+			status = "在办";
+		else if (input == "2")
+			status = "在办";
+		else if (input == "3")
+			status = "在办";
+		else if (input == "4")
+			status = "已邮寄";
+		else if (input == "5")
+			status = "已签";
+		else if (!input)
+			status = "";
+		return status;
 	}
 });
 // 自定义表单验证日期格式
@@ -2458,7 +2047,7 @@ app.directive("dateFormat", function() {
 		require : 'ngModel',
 		scope : true,
 		link : function(scope, elem, attrs, controller) {
-			var dateRegexp = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+			var dateRegexp = /^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/;
 
 			// Model变化时执行
 			// 初始化指令时BU执行
@@ -2475,68 +2064,36 @@ app.directive("dateFormat", function() {
 		}
 	}
 });
-app
-		.directive(
-				'hasPermission',
-				function($timeout) {
-					return {
-						restrict : 'A',
-						link : function(scope, element, attr) {
-
-							var key = attr.hasPermission.trim(); // 获取页面上的权限值
-							/* console.log("获取页面上的权限值" + key); */
-							/* console.log("cookie内容" + JSON.stringify(cookie)); */
-							/*
-							 * if (sessionStorage.getItem('userRole').trim() ==
-							 * "3") { element.css("display", "none"); }
-							 */
-							switch (sessionStorage.getItem('userRole').trim()) {
-							case "1":
-								var keys1 = " cBodyEdit cPsAdd cPsEdit cPsDel cRnAdd cRnEdit cRnDel bReceAdd tContCollect tInvoFinish bInvoAdd cAdd cHeadEdit cDel cTaskAdd tInvoAudit tContDetail ";
-								var regStr1 = "\\s" + key + "\\s";
-								var reg1 = new RegExp(regStr1);
-								if (keys1.search(reg1) < 0) {
-									element.css("display", "none");
-								}
-								break;
-							case "2":
-								var keys2 = " tContDetail ";
-								var regStr2 = "\\s" + key + "\\s";
-								var reg2 = new RegExp(regStr2);
-								if (keys2.search(reg2) < 0) {
-									element.css("display", "none");
-								}
-								break;
-							case "3":
-								var keys3 = " cBodyEdit cPsAdd cPsEdit cPsDel cRnAdd cRnEdit cRnDel bReceAdd tContCollect tInvoFinish ";
-								var regStr3 = "\\s" + key + "\\s";
-								var reg3 = new RegExp(regStr3);
-								if (keys3.search(reg3) < 0) {
-									element.css("display", "none");
-								}
-								break;
-							case "4":
-								var keys4 = " bInvoAdd cPsFinish tContDetail ";
-								var regStr4 = "\\s" + key + "\\s";
-								var reg4 = new RegExp(regStr4);
-								if (keys4.search(reg4) < 0) {
-									element.css("display", "none");
-								}
-								break;
-							case "5":
-								var keys5 = " cAdd cHeadEdit cDel cTaskAdd tInvoAudit tContDetail ";
-								var regStr5 = "\\s" + key + "\\s";
-								var reg5 = new RegExp(regStr5);
-								if (keys5.search(reg5) < 0) {
-									element.css("display", "none");
-								}
-								break;
-							}
-						}
-					};
-
-				});
-
+/*
+ * app .directive( 'hasPermission', function($timeout) { return { restrict :
+ * 'A', link : function(scope, element, attr) {
+ * 
+ * var key = attr.hasPermission.trim(); // 获取页面上的权限值 console.log("获取页面上的权限值" +
+ * key); console.log("cookie内容" + JSON.stringify(cookie));
+ * 
+ * if (sessionStorage.getItem('userRole').trim() == "3") {
+ * element.css("display", "none"); }
+ * 
+ * switch (sessionStorage.getItem('userRole').trim()) { case "1": var keys1 = "
+ * cBodyEdit cPsAdd cPsEdit cPsDel cRnAdd cRnEdit cRnDel bReceAdd tContCollect
+ * tInvoFinish bInvoAdd cAdd cHeadEdit cDel cTaskAdd tInvoAudit tContDetail ";
+ * var regStr1 = "\\s" + key + "\\s"; var reg1 = new RegExp(regStr1); if
+ * (keys1.search(reg1) < 0) { element.css("display", "none"); } break; case "2":
+ * var keys2 = " tContDetail "; var regStr2 = "\\s" + key + "\\s"; var reg2 =
+ * new RegExp(regStr2); if (keys2.search(reg2) < 0) { element.css("display",
+ * "none"); } break; case "3": var keys3 = " cBodyEdit cPsAdd cPsEdit cPsDel
+ * cRnAdd cRnEdit cRnDel bReceAdd tContCollect tInvoFinish "; var regStr3 =
+ * "\\s" + key + "\\s"; var reg3 = new RegExp(regStr3); if (keys3.search(reg3) <
+ * 0) { element.css("display", "none"); } break; case "4": var keys4 = "
+ * bInvoAdd tContDetail "; var regStr4 = "\\s" + key + "\\s"; var reg4 = new
+ * RegExp(regStr4); if (keys4.search(reg4) < 0) { element.css("display",
+ * "none"); } break; case "5": var keys5 = " cAdd cHeadEdit cDel cTaskAdd
+ * tInvoAudit tContDetail "; var regStr5 = "\\s" + key + "\\s"; var reg5 = new
+ * RegExp(regStr5); if (keys5.search(reg5) < 0) { element.css("display",
+ * "none"); } break; } } };
+ * 
+ * });
+ */
 /*
  * app.directive('minLength', function () { return { restrict: 'A', require:
  * 'ngModel', scope: { 'min': '@' }, link: function (scope, ele, attrs,
